@@ -1,0 +1,8 @@
+service:
+  full_name: "AWS Network Manager"
+  short_name: "AWS Network Manager"
+  link: "https://docs.aws.amazon.com/vpc/"
+  documentation: "https://docs.aws.amazon.com/network-manager/latest/tgwnm/what-are-global-networks.html"
+api_versions:
+  - api_version: v1alpha1
+    status: available

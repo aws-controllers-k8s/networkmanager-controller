@@ -1,0 +1,16 @@
+ignore:
+  resource_names:
+      - ConnectAttachment
+      - ConnectPeer
+      - Connection
+      - CoreNetwork
+      - CoreNetworkPrefixListAssociation
+      - Device
+      - DirectConnectGatewayAttachment
+      - GlobalNetwork
+      - Link
+      - Site
+      - SiteToSiteVpnAttachment
+      - TransitGatewayPeering
+      - TransitGatewayRouteTableAttachment
+      - VpcAttachment
