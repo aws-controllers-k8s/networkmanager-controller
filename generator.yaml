@@ -7,10 +7,15 @@ ignore:
       - CoreNetworkPrefixListAssociation
       - Device
       - DirectConnectGatewayAttachment
-      - GlobalNetwork
+      #- GlobalNetwork
       - Link
       - Site
       - SiteToSiteVpnAttachment
       - TransitGatewayPeering
       - TransitGatewayRouteTableAttachment
       - VpcAttachment
+resources:
+  GlobalNetwork:
+    hooks:
+      sdk_update_pre_build_request:
+        template_path: hooks/global_network/sdk_update_pre_build_request.go.tpl

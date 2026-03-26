@@ -1,0 +1,9 @@
+apiVersion: networkmanager.services.k8s.aws/v1alpha1
+kind: GlobalNetwork
+metadata:
+  name: $GLOBAL_NETWORK_NAME
+spec:
+  description: $DESCRIPTION
+  tags:
+    - key: $TAG_KEY
+      value: $TAG_VALUE

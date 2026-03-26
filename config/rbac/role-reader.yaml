@@ -9,6 +9,7 @@ rules:
 - apiGroups:
   - networkmanager.services.k8s.aws
   resources:
+  - globalnetworks
   verbs:
   - get
   - list
