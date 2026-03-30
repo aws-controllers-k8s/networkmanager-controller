@@ -3,7 +3,7 @@ ignore:
       - ConnectAttachment
       - ConnectPeer
       - Connection
-      - CoreNetwork
+      #- CoreNetwork
       - CoreNetworkPrefixListAssociation
       - Device
       - DirectConnectGatewayAttachment
@@ -14,6 +14,8 @@ ignore:
       - TransitGatewayPeering
       - TransitGatewayRouteTableAttachment
       - VpcAttachment
+  field_paths:
+      - CreateCoreNetworkInput.ClientToken
 resources:
   GlobalNetwork:
     synced:
@@ -27,3 +29,44 @@ resources:
     hooks:
       sdk_update_pre_build_request:
         template_path: hooks/global_network/sdk_update_pre_build_request.go.tpl
+      sdk_delete_post_request:
+        template_path: hooks/common/sdk_delete_post_request.go.tpl
+  CoreNetwork:
+    fields:
+      GlobalNetworkID:
+        is_immutable: true
+        references:
+          resource: GlobalNetwork
+          path: Status.GlobalNetworkID
+      PolicyDocument:
+        is_required: true
+        compare:
+          is_ignored: true
+      PolicyVersionID:
+        is_read_only: true
+        from:
+          operation: GetCoreNetworkPolicy
+          path: CoreNetworkPolicy.PolicyVersionId
+    synced:
+      when:
+      - path: Status.State
+        in:
+        - AVAILABLE
+    exceptions:
+      terminal_codes:
+      - ValidationException
+      - CoreNetworkPolicyException
+    hooks:
+      delta_pre_compare:
+        template_path: hooks/core_network/delta_pre_compare.go.tpl
+      sdk_update_pre_build_request:
+        template_path: hooks/core_network/sdk_update_pre_build_request.go.tpl
+      sdk_update_post_set_output:
+        template_path: hooks/core_network/sdk_update_post_set_output.go.tpl
+      sdk_create_post_set_output:
+        template_path: hooks/core_network/sdk_create_post_set_output.go.tpl
+      sdk_read_one_post_set_output:
+        template_path: hooks/core_network/sdk_read_one_post_set_output.go.tpl
+      sdk_delete_post_request:
+        template_path: hooks/common/sdk_delete_post_request.go.tpl
+

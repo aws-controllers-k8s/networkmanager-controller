@@ -39,3 +39,28 @@ class NetworkManagerValidator:
         except self.networkmanager_client.exceptions.ClientError:
             pass
         assert res_found is exists
+    
+    def get_core_network(self, core_network_id: str) -> Union[None, Dict]:
+        try: 
+            aws_res = self.networkmanager_client.get_core_network(CoreNetworkId=core_network_id)
+            if "CoreNetwork" in aws_res:
+                return aws_res["CoreNetwork"]
+            return None
+        except self.networkmanager_client.exceptions.ClientError:
+            return None
+
+    def assert_core_network(self, core_network_id: str, exists=True):
+        res_found = False
+        try:
+            aws_res = self.networkmanager_client.get_core_network(CoreNetworkId=core_network_id)
+            res_found = "CoreNetwork" in aws_res
+        except self.networkmanager_client.exceptions.ClientError:
+            pass
+        assert res_found is exists
+    
+    def assert_core_network_segment(self, core_network_id: str, segment_name: str):
+        aws_res = self.get_core_network(core_network_id)
+        assert any(
+            segment.get("Name") == segment_name
+            for segment in aws_res.get("Segments", [])
+        ), f"No segment found with name {segment_name}"
