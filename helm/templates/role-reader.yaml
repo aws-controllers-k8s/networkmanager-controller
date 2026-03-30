@@ -16,6 +16,7 @@ rules:
 - apiGroups:
   - networkmanager.services.k8s.aws
   resources:
+  - corenetworks
   - globalnetworks
   verbs:
   - get

@@ -403,6 +403,15 @@ func (rm *resourceManager) sdkDelete(
 	_ = resp
 	resp, err = rm.sdkapi.DeleteGlobalNetwork(ctx, input)
 	rm.metrics.RecordAPICall("DELETE", "DeleteGlobalNetwork", err)
+	if err == nil {
+		if observed, err := rm.sdkFind(ctx, r); err != ackerr.NotFound {
+			if err != nil {
+				return nil, err
+			}
+			r.SetStatus(observed)
+			return r, requeueWaitWhileDeleting
+		}
+	}
 	return nil, err
 }
 
