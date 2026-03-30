@@ -13,16 +13,9 @@
 
 import boto3
 import pytest
-import logging
-import time
 
-from acktest.resources import random_suffix_name
 from acktest.k8s import resource as k8s
-from e2e import CRD_GROUP, CRD_VERSION, load_networkmanager_resource
-from e2e.replacement_values import REPLACEMENT_VALUES
 
-GLOBAL_NETWORK_RESOURCE_PLURAL = "globalnetworks"
-GLOBAL_NETWORK_CREATE_WAIT_AFTER_SECONDS = 10
 
 def pytest_addoption(parser):
     parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
@@ -57,49 +50,3 @@ def k8s_client():
 @pytest.fixture(scope='module')
 def networkmanager_client():
     return boto3.client('networkmanager')
-
-
-@pytest.fixture
-def simple_global_network(request):
-    resource_name = random_suffix_name("global-network-ack-test", 31)
-    replacements = REPLACEMENT_VALUES.copy()
-    replacements["GLOBAL_NETWORK_NAME"] = resource_name
-    replacements["DESCRIPTION"] = "Test Global Network"
-
-    marker = request.node.get_closest_marker("resource_data")
-    if marker is not None:
-        data = marker.args[0]
-        if 'description' in data:
-            replacements["DESCRIPTION"] = data['description']
-        if 'tag_key' in data:
-            replacements["TAG_KEY"] = data['tag_key']
-        if 'tag_value' in data:
-            replacements["TAG_VALUE"] = data['tag_value']
-
-    # Load Global Network CR
-    resource_data = load_networkmanager_resource(
-        "global_network",
-        additional_replacements=replacements,
-    )
-    logging.debug(resource_data)
-
-    # Create k8s resource
-    ref = k8s.CustomResourceReference(
-        CRD_GROUP, CRD_VERSION, GLOBAL_NETWORK_RESOURCE_PLURAL,
-        resource_name, namespace="default",
-    )
-    k8s.create_custom_resource(ref, resource_data)
-    time.sleep(GLOBAL_NETWORK_CREATE_WAIT_AFTER_SECONDS)
-
-    cr = k8s.wait_resource_consumed_by_controller(ref)
-    assert cr is not None
-    assert k8s.get_resource_exists(ref)
-
-    yield (ref, cr)
-
-    # Try to delete, if doesn't already exist
-    try:
-        _, deleted = k8s.delete_custom_resource(ref, 3, 10)
-        assert deleted
-    except:
-        pass
