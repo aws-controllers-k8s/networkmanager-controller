@@ -27,3 +27,317 @@ var (
 	_ = &aws.JSONValue{}
 	_ = ackv1alpha1.AWSAccountID("")
 )
+
+// Specifies a location in Amazon Web Services.
+type AWSLocation struct {
+	Zone *string `json:"zone,omitempty"`
+}
+
+// Describes a core network attachment.
+type Attachment struct {
+	CreatedAt   *metav1.Time `json:"createdAt,omitempty"`
+	SegmentName *string      `json:"segmentName,omitempty"`
+	Tags        []*Tag       `json:"tags,omitempty"`
+	UpdatedAt   *metav1.Time `json:"updatedAt,omitempty"`
+}
+
+// Summary information about routing policy associations for an attachment.
+type AttachmentRoutingPolicyAssociationSummary struct {
+	RoutingPolicyLabel *string `json:"routingPolicyLabel,omitempty"`
+}
+
+// Describes a core network Connect peer.
+type ConnectPeer struct {
+	CreatedAt *metav1.Time `json:"createdAt,omitempty"`
+	Tags      []*Tag       `json:"tags,omitempty"`
+}
+
+// Describes a core network Connect peer association.
+type ConnectPeerAssociation struct {
+	GlobalNetworkID *string `json:"globalNetworkID,omitempty"`
+}
+
+// Summary description of a Connect peer.
+type ConnectPeerSummary struct {
+	CreatedAt *metav1.Time `json:"createdAt,omitempty"`
+	Tags      []*Tag       `json:"tags,omitempty"`
+}
+
+// Describes a connection.
+type Connection struct {
+	CreatedAt       *metav1.Time `json:"createdAt,omitempty"`
+	Description     *string      `json:"description,omitempty"`
+	GlobalNetworkID *string      `json:"globalNetworkID,omitempty"`
+	Tags            []*Tag       `json:"tags,omitempty"`
+}
+
+// Describes connection health.
+type ConnectionHealth struct {
+	Timestamp *metav1.Time `json:"timestamp,omitempty"`
+}
+
+// Describes a core network.
+type CoreNetwork struct {
+	CreatedAt       *metav1.Time `json:"createdAt,omitempty"`
+	Description     *string      `json:"description,omitempty"`
+	GlobalNetworkID *string      `json:"globalNetworkID,omitempty"`
+	Tags            []*Tag       `json:"tags,omitempty"`
+}
+
+// Details describing a core network change.
+type CoreNetworkChange struct {
+	Identifier     *string `json:"identifier,omitempty"`
+	IdentifierPath *string `json:"identifierPath,omitempty"`
+}
+
+// Describes a core network change event. This can be a change to a segment,
+// attachment, route, etc.
+type CoreNetworkChangeEvent struct {
+	EventTime      *metav1.Time `json:"eventTime,omitempty"`
+	IdentifierPath *string      `json:"identifierPath,omitempty"`
+}
+
+// Describes a core network change event.
+type CoreNetworkChangeEventValues struct {
+	CIDR                     *string `json:"cidr,omitempty"`
+	NetworkFunctionGroupName *string `json:"networkFunctionGroupName,omitempty"`
+	SegmentName              *string `json:"segmentName,omitempty"`
+}
+
+// Describes a core network change.
+type CoreNetworkChangeValues struct {
+	AttachmentID             *string `json:"attachmentID,omitempty"`
+	CIDR                     *string `json:"cidr,omitempty"`
+	DestinationIdentifier    *string `json:"destinationIdentifier,omitempty"`
+	NetworkFunctionGroupName *string `json:"networkFunctionGroupName,omitempty"`
+	SegmentName              *string `json:"segmentName,omitempty"`
+}
+
+// Describes a network function group.
+type CoreNetworkNetworkFunctionGroup struct {
+	Name *string `json:"name,omitempty"`
+}
+
+// Describes a core network
+type CoreNetworkNetworkFunctionGroupIdentifier struct {
+	NetworkFunctionGroupName *string `json:"networkFunctionGroupName,omitempty"`
+}
+
+// Describes a core network policy. You can have only one LIVE Core Policy.
+type CoreNetworkPolicy struct {
+	CreatedAt   *metav1.Time `json:"createdAt,omitempty"`
+	Description *string      `json:"description,omitempty"`
+}
+
+// Describes a core network policy version.
+type CoreNetworkPolicyVersion struct {
+	CreatedAt   *metav1.Time `json:"createdAt,omitempty"`
+	Description *string      `json:"description,omitempty"`
+}
+
+// Routing information for a core network, including route details and BGP attributes.
+type CoreNetworkRoutingInformation struct {
+	LocalPreference *string `json:"localPreference,omitempty"`
+	Med             *string `json:"med,omitempty"`
+	Prefix          *string `json:"prefix,omitempty"`
+}
+
+// Describes a core network segment, which are dedicated routes. Only attachments
+// within this segment can communicate with each other.
+type CoreNetworkSegment struct {
+	Name *string `json:"name,omitempty"`
+}
+
+// Returns details about a core network edge.
+type CoreNetworkSegmentEdgeIdentifier struct {
+	SegmentName *string `json:"segmentName,omitempty"`
+}
+
+// Returns summary information about a core network.
+type CoreNetworkSummary struct {
+	Description     *string `json:"description,omitempty"`
+	GlobalNetworkID *string `json:"globalNetworkID,omitempty"`
+	Tags            []*Tag  `json:"tags,omitempty"`
+}
+
+// Describes the association between a customer gateway, a device, and a link.
+type CustomerGatewayAssociation struct {
+	GlobalNetworkID *string `json:"globalNetworkID,omitempty"`
+}
+
+// Describes a device.
+type Device struct {
+	CreatedAt       *metav1.Time `json:"createdAt,omitempty"`
+	Description     *string      `json:"description,omitempty"`
+	GlobalNetworkID *string      `json:"globalNetworkID,omitempty"`
+	Model           *string      `json:"model,omitempty"`
+	SerialNumber    *string      `json:"serialNumber,omitempty"`
+	Tags            []*Tag       `json:"tags,omitempty"`
+	Type            *string      `json:"type_,omitempty"`
+	Vendor          *string      `json:"vendor,omitempty"`
+}
+
+// Describes the edge that's used for the override.
+type EdgeOverride struct {
+	UseEdge *string `json:"useEdge,omitempty"`
+}
+
+// Describes a global network. This is a single private network acting as a
+// high-level container for your network objects, including an Amazon Web Services-managed
+// Core Network.
+type GlobalNetwork_SDK struct {
+	CreatedAt        *metav1.Time `json:"createdAt,omitempty"`
+	Description      *string      `json:"description,omitempty"`
+	GlobalNetworkARN *string      `json:"globalNetworkARN,omitempty"`
+	GlobalNetworkID  *string      `json:"globalNetworkID,omitempty"`
+	State            *string      `json:"state,omitempty"`
+	Tags             []*Tag       `json:"tags,omitempty"`
+}
+
+// Describes a link.
+type Link struct {
+	CreatedAt       *metav1.Time `json:"createdAt,omitempty"`
+	Description     *string      `json:"description,omitempty"`
+	GlobalNetworkID *string      `json:"globalNetworkID,omitempty"`
+	Provider        *string      `json:"provider,omitempty"`
+	Tags            []*Tag       `json:"tags,omitempty"`
+	Type            *string      `json:"type_,omitempty"`
+}
+
+// Describes the association between a device and a link.
+type LinkAssociation struct {
+	GlobalNetworkID *string `json:"globalNetworkID,omitempty"`
+}
+
+// Describes a location.
+type Location struct {
+	Address   *string `json:"address,omitempty"`
+	Latitude  *string `json:"latitude,omitempty"`
+	Longitude *string `json:"longitude,omitempty"`
+}
+
+// Describes a network function group for service insertion.
+type NetworkFunctionGroup struct {
+	Name *string `json:"name,omitempty"`
+}
+
+// Describes a network resource.
+type NetworkResource struct {
+	Definition          *string      `json:"definition,omitempty"`
+	DefinitionTimestamp *metav1.Time `json:"definitionTimestamp,omitempty"`
+	ResourceID          *string      `json:"resourceID,omitempty"`
+	ResourceType        *string      `json:"resourceType,omitempty"`
+	Tags                []*Tag       `json:"tags,omitempty"`
+}
+
+// Describes a resource count.
+type NetworkResourceCount struct {
+	ResourceType *string `json:"resourceType,omitempty"`
+}
+
+// Describes a network resource.
+type NetworkResourceSummary struct {
+	Definition   *string `json:"definition,omitempty"`
+	NameTag      *string `json:"nameTag,omitempty"`
+	ResourceType *string `json:"resourceType,omitempty"`
+}
+
+// Describes a network route.
+type NetworkRoute struct {
+	DestinationCIDRBlock *string `json:"destinationCIDRBlock,omitempty"`
+	PrefixListID         *string `json:"prefixListID,omitempty"`
+}
+
+// Describes the destination of a network route.
+type NetworkRouteDestination struct {
+	NetworkFunctionGroupName *string `json:"networkFunctionGroupName,omitempty"`
+	ResourceID               *string `json:"resourceID,omitempty"`
+	ResourceType             *string `json:"resourceType,omitempty"`
+	SegmentName              *string `json:"segmentName,omitempty"`
+}
+
+// Describes the telemetry information for a resource.
+type NetworkTelemetry struct {
+	Address      *string `json:"address,omitempty"`
+	ResourceID   *string `json:"resourceID,omitempty"`
+	ResourceType *string `json:"resourceType,omitempty"`
+}
+
+// Describes a path component.
+type PathComponent struct {
+	DestinationCIDRBlock *string `json:"destinationCIDRBlock,omitempty"`
+}
+
+// Describes a peering connection.
+type Peering struct {
+	CreatedAt *metav1.Time `json:"createdAt,omitempty"`
+	Tags      []*Tag       `json:"tags,omitempty"`
+}
+
+// Information about a prefix list association with a core network.
+type PrefixListAssociation struct {
+	PrefixListAlias *string `json:"prefixListAlias,omitempty"`
+}
+
+// Describes proposed changes to a network function group.
+type ProposedNetworkFunctionGroupChange struct {
+	NetworkFunctionGroupName *string `json:"networkFunctionGroupName,omitempty"`
+	Tags                     []*Tag  `json:"tags,omitempty"`
+}
+
+// Describes a proposed segment change. In some cases, the segment change must
+// first be evaluated and accepted.
+type ProposedSegmentChange struct {
+	SegmentName *string `json:"segmentName,omitempty"`
+	Tags        []*Tag  `json:"tags,omitempty"`
+}
+
+// Describes a resource relationship.
+type Relationship struct {
+	From *string `json:"from,omitempty"`
+	To   *string `json:"to,omitempty"`
+}
+
+// Describes a route analysis.
+type RouteAnalysis struct {
+	GlobalNetworkID *string      `json:"globalNetworkID,omitempty"`
+	RouteAnalysisID *string      `json:"routeAnalysisID,omitempty"`
+	StartTimestamp  *metav1.Time `json:"startTimestamp,omitempty"`
+}
+
+// Information about the next hop for a route in the core network.
+type RoutingInformationNextHop struct {
+	CoreNetworkAttachmentID *string `json:"coreNetworkAttachmentID,omitempty"`
+	ResourceID              *string `json:"resourceID,omitempty"`
+	ResourceType            *string `json:"resourceType,omitempty"`
+	SegmentName             *string `json:"segmentName,omitempty"`
+}
+
+// Describes a site.
+type Site struct {
+	CreatedAt       *metav1.Time `json:"createdAt,omitempty"`
+	Description     *string      `json:"description,omitempty"`
+	GlobalNetworkID *string      `json:"globalNetworkID,omitempty"`
+	Tags            []*Tag       `json:"tags,omitempty"`
+}
+
+// Describes a tag.
+type Tag struct {
+	Key   *string `json:"key,omitempty"`
+	Value *string `json:"value,omitempty"`
+}
+
+// Describes a transit gateway Connect peer association.
+type TransitGatewayConnectPeerAssociation struct {
+	GlobalNetworkID *string `json:"globalNetworkID,omitempty"`
+}
+
+// Describes the registration of a transit gateway to a global network.
+type TransitGatewayRegistration struct {
+	GlobalNetworkID *string `json:"globalNetworkID,omitempty"`
+}
+
+// Describes the status of a transit gateway registration.
+type TransitGatewayRegistrationStateReason struct {
+	Message *string `json:"message,omitempty"`
+}

@@ -14,17 +14,24 @@
 import boto3
 import pytest
 
-from acktest import k8s
+from acktest.k8s import resource as k8s
+
 
 def pytest_addoption(parser):
     parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
 
 def pytest_configure(config):
     config.addinivalue_line(
+        "markers", "canary: mark test to also run in canary tests"
+    )
+    config.addinivalue_line(
         "markers", "service(arg): mark test associated with a given service"
     )
     config.addinivalue_line(
         "markers", "slow: mark test as slow to run"
+    )
+    config.addinivalue_line(
+        "markers", "resource_data: mark test with data to use when creating fixture"
     )
 
 def pytest_collection_modifyitems(config, items):
@@ -41,5 +48,5 @@ def k8s_client():
     return k8s._get_k8s_api_client()
 
 @pytest.fixture(scope='module')
-def _client():
-    return boto3.client('')
+def networkmanager_client():
+    return boto3.client('networkmanager')

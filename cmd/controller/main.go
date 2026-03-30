@@ -39,6 +39,8 @@ import (
 	svctypes "github.com/aws-controllers-k8s/networkmanager-controller/apis/v1alpha1"
 	svcresource "github.com/aws-controllers-k8s/networkmanager-controller/pkg/resource"
 
+	_ "github.com/aws-controllers-k8s/networkmanager-controller/pkg/resource/global_network"
+
 	"github.com/aws-controllers-k8s/networkmanager-controller/pkg/version"
 )
 
