@@ -70,6 +70,26 @@ rules:
   - list
   - watch
 - apiGroups:
+  - networkmanager.services.k8s.aws
+  resources:
+  - globalnetworks
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - networkmanager.services.k8s.aws
+  resources:
+  - globalnetworks/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - services.k8s.aws
   resources:
   - fieldexports

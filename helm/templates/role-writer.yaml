@@ -16,6 +16,7 @@ rules:
 - apiGroups:
   - networkmanager.services.k8s.aws
   resources:
+  - globalnetworks
   verbs:
   - create
   - delete
@@ -27,6 +28,7 @@ rules:
 - apiGroups:
   - networkmanager.services.k8s.aws
   resources:
+  - globalnetworks
   verbs:
   - get
   - patch

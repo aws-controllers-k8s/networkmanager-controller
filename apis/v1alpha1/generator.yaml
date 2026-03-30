@@ -14,9 +14,16 @@ ignore:
       - TransitGatewayPeering
       - TransitGatewayRouteTableAttachment
       - VpcAttachment
-
 resources:
   GlobalNetwork:
+    synced:
+      when:
+      - path: Status.State
+        in:
+        - AVAILABLE
+    exceptions:
+      terminal_codes:
+      - ValidationException
     hooks:
       sdk_update_pre_build_request:
         template_path: hooks/global_network/sdk_update_pre_build_request.go.tpl
