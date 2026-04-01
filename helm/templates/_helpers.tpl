@@ -72,6 +72,7 @@ rules:
 - apiGroups:
   - networkmanager.services.k8s.aws
   resources:
+  - corenetworks
   - globalnetworks
   verbs:
   - create
@@ -84,6 +85,7 @@ rules:
 - apiGroups:
   - networkmanager.services.k8s.aws
   resources:
+  - corenetworks/status
   - globalnetworks/status
   verbs:
   - get

@@ -1,0 +1,1 @@
+ko.Status.PolicyVersionID = latest.ko.Status.PolicyVersionID

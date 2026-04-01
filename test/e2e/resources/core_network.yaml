@@ -1,0 +1,11 @@
+apiVersion: networkmanager.services.k8s.aws/v1alpha1
+kind: CoreNetwork
+metadata:
+  name: $CORE_NETWORK_NAME
+spec:
+  description: $DESCRIPTION
+  globalNetworkID: $GLOBAL_NETWORK_ID
+  policyDocument: '$POLICY_DOCUMENT'
+  tags:
+    - key: $TAG_KEY
+      value: $TAG_VALUE
