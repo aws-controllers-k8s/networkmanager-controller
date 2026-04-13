@@ -60,7 +60,7 @@ def simple_core_network(request, simple_global_network):
     replacements = REPLACEMENT_VALUES.copy()
     replacements["CORE_NETWORK_NAME"] = resource_name
     replacements["DESCRIPTION"] = DESCRIPTION_DEFAULT
-    replacements["POLICY_DOCUMENT"] = CORE_NETWORK_POLICY_DEFAULT
+    replacements["POLICY_DOCUMENT"] = ""
     _, global_network_cr = simple_global_network
     global_network_id = global_network_cr["status"]["globalNetworkID"]
     replacements["GLOBAL_NETWORK_ID"] = global_network_id
@@ -79,7 +79,7 @@ def simple_core_network(request, simple_global_network):
         if 'tag_value' in data:
             replacements["TAG_VALUE"] = data['tag_value']
 
-    # Load Global Network CR
+    # Load Core Network CR
     resource_data = load_networkmanager_resource(
         "core_network",
         additional_replacements=replacements,
@@ -116,7 +116,6 @@ class TestCoreNetwork:
         time.sleep(CREATE_WAIT_AFTER_SECONDS)
         assert k8s.wait_on_condition(ref, "ACK.ResourceSynced", "True", wait_periods=10)
 
-        # Check Global Network exists in AWS
         networkmanager_validator = NetworkManagerValidator(networkmanager_client)
         networkmanager_validator.assert_core_network(resource_id)
 
@@ -134,15 +133,13 @@ class TestCoreNetwork:
         core_network = networkmanager_validator.get_core_network(resource_id)
         assert core_network["Description"] == newDescription
 
-        newPolicy = json.loads(cr["spec"]["policyDocument"])
-        newPolicy["segments"].append({"name": "newsegment"})
         updates = {
-            "spec": {"policyDocument": json.dumps(newPolicy)}
+            "spec": {"policyDocument": CORE_NETWORK_POLICY_DEFAULT}
         }
         k8s.patch_custom_resource(ref, updates)
         time.sleep(MODIFY_WAIT_AFTER_SECONDS)
         assert k8s.wait_on_condition(ref, "ACK.ResourceSynced", "True", wait_periods=10)
-        networkmanager_validator.assert_core_network_segment(resource_id, "newsegment")
+        networkmanager_validator.assert_core_network_segment(resource_id, "test")
 
         # Delete k8s resource
         _, deleted = k8s.delete_custom_resource(ref, 10, 60)

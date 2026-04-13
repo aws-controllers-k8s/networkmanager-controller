@@ -4,15 +4,24 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 
 	"github.com/aws-controllers-k8s/networkmanager-controller/pkg/tags"
 	"github.com/aws-controllers-k8s/runtime/pkg/requeue"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/networkmanager"
 	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/networkmanager/types"
+	smithy "github.com/aws/smithy-go"
 )
 
 var syncTags = tags.SyncTags
+
+type coreNetworkPolicyClient interface {
+	GetCoreNetworkPolicy(context.Context, *svcsdk.GetCoreNetworkPolicyInput, ...func(*svcsdk.Options)) (*svcsdk.GetCoreNetworkPolicyOutput, error)
+	PutCoreNetworkPolicy(context.Context, *svcsdk.PutCoreNetworkPolicyInput, ...func(*svcsdk.Options)) (*svcsdk.PutCoreNetworkPolicyOutput, error)
+	ExecuteCoreNetworkChangeSet(context.Context, *svcsdk.ExecuteCoreNetworkChangeSetInput, ...func(*svcsdk.Options)) (*svcsdk.ExecuteCoreNetworkChangeSetOutput, error)
+}
 
 var (
 	requeueWaitWhileDeleting = requeue.NeededAfter(
@@ -33,12 +42,14 @@ var (
 	)
 )
 
-func (rm *resourceManager) syncPolicyDocument(
+func syncPolicyDocument(
 	ctx context.Context,
+	client coreNetworkPolicyClient,
 	desired *resource,
-	latest *resource,
+	live *resource,
 ) error {
-	coreNetworkID := latest.ko.Status.CoreNetworkID
+	fmt.Println("IN SYNC POLICY")
+	coreNetworkID := live.ko.Status.CoreNetworkID
 
 	// Check live and latest policy documents.
 	// If live and latest have the same policy version ID, check their policy documents.
@@ -46,48 +57,60 @@ func (rm *resourceManager) syncPolicyDocument(
 	// since the last time we checked, and we should attempt to submit it for execution.
 	// If live and latest have different policy version IDs, it means a new policy document
 	// has been submitted and is either pending generation, ready to execute, or executing.
-	latestPolicyResp, err := rm.sdkapi.GetCoreNetworkPolicy(ctx, &svcsdk.GetCoreNetworkPolicyInput{
+	latestPolicyResp, err := client.GetCoreNetworkPolicy(ctx, &svcsdk.GetCoreNetworkPolicyInput{
 		CoreNetworkId: coreNetworkID,
 		Alias:         svcsdktypes.CoreNetworkPolicyAliasLatest,
 	})
-	if err != nil {
+	// If there are no policies at all, GetCoreNetworkPolicy will throw a ValidationException.
+	// We can ignore this error and treat it as if there is no latest policy.
+	if ignoreValidationException(err) != nil {
 		return err
 	}
 
-	livePolicyResp, err := rm.sdkapi.GetCoreNetworkPolicy(ctx, &svcsdk.GetCoreNetworkPolicyInput{
-		CoreNetworkId: coreNetworkID,
-		Alias:         svcsdktypes.CoreNetworkPolicyAliasLive,
-	})
-	if err != nil {
-		return err
+	livePolicyVersionId := int32(0)
+	if live.ko.Status.PolicyVersionID != nil {
+		livePolicyVersionId = (int32)(*live.ko.Status.PolicyVersionID)
 	}
-	if *livePolicyResp.CoreNetworkPolicy.PolicyVersionId == *latestPolicyResp.CoreNetworkPolicy.PolicyVersionId {
-		if !arePolicyDocumentsEqual(*desired.ko.Spec.PolicyDocument, *latestPolicyResp.CoreNetworkPolicy.PolicyDocument) {
+
+	latestPolicyVersionId := int32(0)
+	var latestPolicyDocument *string
+	latestPolicyChangeSetState := svcsdktypes.ChangeSetState("")
+	if latestPolicyResp != nil && latestPolicyResp.CoreNetworkPolicy != nil {
+		latestPolicyVersionId = *latestPolicyResp.CoreNetworkPolicy.PolicyVersionId
+		latestPolicyDocument = latestPolicyResp.CoreNetworkPolicy.PolicyDocument
+		latestPolicyChangeSetState = latestPolicyResp.CoreNetworkPolicy.ChangeSetState
+	}
+
+	var desiredPolicyDocument *string
+	if desired.ko.Spec.PolicyDocument != nil {
+		desiredPolicyDocument = desired.ko.Spec.PolicyDocument
+	}
+	if livePolicyVersionId == latestPolicyVersionId {
+		if !arePolicyDocumentsEqual(desiredPolicyDocument, latestPolicyDocument) {
+			fmt.Printf("ABOUT TO PUTCORENETWORKPOLICY: DESIRED - %#v\n", desiredPolicyDocument)
 			putInput := &svcsdk.PutCoreNetworkPolicyInput{
 				CoreNetworkId:  coreNetworkID,
-				PolicyDocument: desired.ko.Spec.PolicyDocument,
+				PolicyDocument: desiredPolicyDocument,
 			}
-			_, err := rm.sdkapi.PutCoreNetworkPolicy(ctx, putInput)
+			_, err := client.PutCoreNetworkPolicy(ctx, putInput)
 			if err != nil {
 				return err
 			}
 			// Requeue immediately to start polling for READY_TO_EXECUTE status
 			return requeueWaitWhilePolicyDocumentUpdating
 		}
+		// If we are here it means the live policy is the same as the desired policy, nothing to do
 		return nil
 	}
 
-	changeSetState := latestPolicyResp.CoreNetworkPolicy.ChangeSetState
-	policyVersionId := latestPolicyResp.CoreNetworkPolicy.PolicyVersionId
-
-	switch changeSetState {
+	switch latestPolicyChangeSetState {
 	case svcsdktypes.ChangeSetStatePendingGeneration:
 		return requeueWaitWhilePolicyDocumentGenerating
 
 	case svcsdktypes.ChangeSetStateReadyToExecute:
-		_, err := rm.sdkapi.ExecuteCoreNetworkChangeSet(ctx, &svcsdk.ExecuteCoreNetworkChangeSetInput{
+		_, err := client.ExecuteCoreNetworkChangeSet(ctx, &svcsdk.ExecuteCoreNetworkChangeSetInput{
 			CoreNetworkId:   coreNetworkID,
-			PolicyVersionId: policyVersionId,
+			PolicyVersionId: aws.Int32(latestPolicyVersionId),
 		})
 		if err != nil {
 			return err
@@ -101,15 +124,34 @@ func (rm *resourceManager) syncPolicyDocument(
 }
 
 // arePolicyDocumentsEqual performs a semantic JSON comparison of the two provided policy documents.
-// If either document is not valid JSON, it falls back to a string comparison
-func arePolicyDocumentsEqual(a, b string) bool {
+// If either document is not valid JSON, it falls back to a string comparison. Nil and empty are considered equal.
+func arePolicyDocumentsEqual(a, b *string) bool {
 	var jsonA, jsonB any
-	errA := json.Unmarshal([]byte(a), &jsonA)
-	errB := json.Unmarshal([]byte(b), &jsonB)
+	sA := normalizePolicyDocument(a)
+	sB := normalizePolicyDocument(b)
+	errA := json.Unmarshal([]byte(sA), &jsonA)
+	errB := json.Unmarshal([]byte(sB), &jsonB)
 
 	if errA != nil || errB != nil {
-		return a == b
+		return sA == sB
 	}
 
 	return reflect.DeepEqual(jsonA, jsonB)
+}
+
+func normalizePolicyDocument(policyDocument *string) string {
+	if policyDocument == nil {
+		return ""
+	}
+	return *policyDocument
+}
+
+func ignoreValidationException(err error) error {
+	if err != nil {
+		var awsErr smithy.APIError
+		if !errors.As(err, &awsErr) || awsErr.ErrorCode() != "ValidationException" {
+			return err
+		}
+	}
+	return nil
 }

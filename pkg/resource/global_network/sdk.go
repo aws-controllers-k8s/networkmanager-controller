@@ -395,6 +395,9 @@ func (rm *resourceManager) sdkDelete(
 	defer func() {
 		exit(err)
 	}()
+	if r.ko.Status.State != nil && (*r.ko.Status.State == string(svcapitypes.GlobalNetworkState_DELETING)) {
+		return r, requeueWaitWhileDeleting
+	}
 	input, err := rm.newDeleteRequestPayload(r)
 	if err != nil {
 		return nil, err
@@ -404,13 +407,7 @@ func (rm *resourceManager) sdkDelete(
 	resp, err = rm.sdkapi.DeleteGlobalNetwork(ctx, input)
 	rm.metrics.RecordAPICall("DELETE", "DeleteGlobalNetwork", err)
 	if err == nil {
-		if observed, err := rm.sdkFind(ctx, r); err != ackerr.NotFound {
-			if err != nil {
-				return nil, err
-			}
-			r.SetStatus(observed)
-			return r, requeueWaitWhileDeleting
-		}
+		return r, requeueWaitWhileDeleting
 	}
 	return nil, err
 }

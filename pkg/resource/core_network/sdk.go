@@ -208,16 +208,18 @@ func (rm *resourceManager) sdkFind(
 		CoreNetworkId: ko.Status.CoreNetworkID,
 		Alias:         svcsdktypes.CoreNetworkPolicyAliasLive,
 	})
-	if err != nil {
-		var awsErr smithy.APIError
-		if !errors.As(err, &awsErr) || awsErr.ErrorCode() != "ValidationException" {
-			return nil, err
-		}
+	// If the core network has no policy in "live" state yet the request returns a ValidationException
+	// error, we can ignore it.
+	if ignoreValidationException(err) != nil {
+		return nil, err
 	}
 
 	if policyResp != nil && policyResp.CoreNetworkPolicy != nil && policyResp.CoreNetworkPolicy.PolicyDocument != nil {
 		ko.Spec.PolicyDocument = policyResp.CoreNetworkPolicy.PolicyDocument
 		ko.Status.PolicyVersionID = aws.Int64(int64(*policyResp.CoreNetworkPolicy.PolicyVersionId))
+	} else {
+		ko.Spec.PolicyDocument = nil
+		ko.Status.PolicyVersionID = nil
 	}
 	return &resource{ko}, nil
 }
@@ -388,25 +390,6 @@ func (rm *resourceManager) sdkCreate(
 	}
 
 	rm.setStatusDefaults(ko)
-	policyResp, err := rm.sdkapi.GetCoreNetworkPolicy(ctx, &svcsdk.GetCoreNetworkPolicyInput{
-		CoreNetworkId: ko.Status.CoreNetworkID,
-		Alias:         svcsdktypes.CoreNetworkPolicyAliasLive,
-	})
-	// Immediately after creating the Core Network, the live policy may not be available yet. If we get a ResourceNotFoundException,
-	// we can ignore it and assume that the policy will be available on the next read.
-	if err != nil {
-		var awsErr smithy.APIError
-		if !errors.As(err, &awsErr) || awsErr.ErrorCode() != "ValidationException" {
-			return nil, err
-		}
-	}
-
-	if policyResp != nil && policyResp.CoreNetworkPolicy != nil {
-		ko.Status.PolicyVersionID = aws.Int64(int64(*policyResp.CoreNetworkPolicy.PolicyVersionId))
-	} else {
-		ko.Status.PolicyVersionID = nil
-	}
-
 	return &resource{ko}, nil
 }
 
@@ -468,15 +451,16 @@ func (rm *resourceManager) sdkUpdate(
 			return nil, err
 		}
 	}
-	if !delta.DifferentExcept("Spec.Tags") {
-		return desired, nil
-	}
-	if delta.DifferentAt("Spec.PolicyDocument") && desired.ko.Spec.PolicyDocument != nil {
-		if err := rm.syncPolicyDocument(ctx, desired, latest); err != nil {
+
+	if delta.DifferentAt("Spec.PolicyDocument") {
+		if err := syncPolicyDocument(ctx, rm.sdkapi, desired, latest); err != nil {
 			return nil, err
 		}
 	}
 
+	if !delta.DifferentExcept("Spec.Tags", "Spec.PolicyDocument") {
+		return desired, nil
+	}
 	input, err := rm.newUpdateRequestPayload(ctx, desired, delta)
 	if err != nil {
 		return nil, err
@@ -640,6 +624,9 @@ func (rm *resourceManager) sdkDelete(
 	defer func() {
 		exit(err)
 	}()
+	if r.ko.Status.State != nil && (*r.ko.Status.State == string(svcapitypes.CoreNetworkState_DELETING)) {
+		return r, requeueWaitWhileDeleting
+	}
 	input, err := rm.newDeleteRequestPayload(r)
 	if err != nil {
 		return nil, err
@@ -649,13 +636,7 @@ func (rm *resourceManager) sdkDelete(
 	resp, err = rm.sdkapi.DeleteCoreNetwork(ctx, input)
 	rm.metrics.RecordAPICall("DELETE", "DeleteCoreNetwork", err)
 	if err == nil {
-		if observed, err := rm.sdkFind(ctx, r); err != ackerr.NotFound {
-			if err != nil {
-				return nil, err
-			}
-			r.SetStatus(observed)
-			return r, requeueWaitWhileDeleting
-		}
+		return r, requeueWaitWhileDeleting
 	}
 	return nil, err
 }

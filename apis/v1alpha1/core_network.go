@@ -38,8 +38,7 @@ type CoreNetworkSpec struct {
 	// The policy document for creating a core network.
 	//
 	// Regex Pattern: `^[\s\S]*$`
-	// +kubebuilder:validation:Required
-	PolicyDocument *string `json:"policyDocument"`
+	PolicyDocument *string `json:"policyDocument,omitempty"`
 	// Key-value tags associated with a core network request.
 	Tags []*Tag `json:"tags,omitempty"`
 }

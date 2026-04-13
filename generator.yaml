@@ -29,6 +29,8 @@ resources:
     hooks:
       sdk_update_pre_build_request:
         template_path: hooks/global_network/sdk_update_pre_build_request.go.tpl
+      sdk_delete_pre_build_request:
+        template_path: hooks/global_network/sdk_delete_pre_build_request.go.tpl
       sdk_delete_post_request:
         template_path: hooks/common/sdk_delete_post_request.go.tpl
   CoreNetwork:
@@ -39,7 +41,6 @@ resources:
           resource: GlobalNetwork
           path: Status.GlobalNetworkID
       PolicyDocument:
-        is_required: true
         compare:
           is_ignored: true
       PolicyVersionID:
@@ -63,10 +64,10 @@ resources:
         template_path: hooks/core_network/sdk_update_pre_build_request.go.tpl
       sdk_update_post_set_output:
         template_path: hooks/core_network/sdk_update_post_set_output.go.tpl
-      sdk_create_post_set_output:
-        template_path: hooks/core_network/sdk_create_post_set_output.go.tpl
       sdk_read_one_post_set_output:
         template_path: hooks/core_network/sdk_read_one_post_set_output.go.tpl
+      sdk_delete_pre_build_request:
+        template_path: hooks/core_network/sdk_delete_pre_build_request.go.tpl
       sdk_delete_post_request:
         template_path: hooks/common/sdk_delete_post_request.go.tpl
 
