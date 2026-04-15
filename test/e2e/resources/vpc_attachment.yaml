@@ -1,0 +1,13 @@
+apiVersion: networkmanager.services.k8s.aws/v1alpha1
+kind: VpcAttachment
+metadata:
+  name: $VPC_ATTACHMENT_NAME
+spec:
+  coreNetworkID: $CORE_NETWORK_ID
+  vpcARN: $VPC_ARN
+  subnetARNs:
+    - $SUBNET_ARN_1
+    - $SUBNET_ARN_2
+  tags:
+    - key: $TAG_KEY
+      value: $TAG_VALUE
