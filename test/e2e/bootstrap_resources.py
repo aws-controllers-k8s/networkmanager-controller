@@ -15,13 +15,19 @@
 for them.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from acktest.bootstrapping import Resources
 from e2e import bootstrap_directory
 
+
 @dataclass
 class BootstrapResources(Resources):
-    pass
+    # VPC and subnet ARNs for VpcAttachment tests
+    VpcArn: str = ""
+    SubnetArn1: str = ""
+    SubnetArn2: str = ""
+    # VPN Connection ARN for SiteToSiteVpnAttachment tests
+    VpnConnectionArn: str = ""
 
 _bootstrap_resources = None
 
