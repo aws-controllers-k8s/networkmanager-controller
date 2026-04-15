@@ -1,19 +1,36 @@
 ignore:
   resource_names:
-      - ConnectAttachment
-      - ConnectPeer
+      - Attachment
       - Connection
-      - CoreNetwork
       - CoreNetworkPrefixListAssociation
       - Device
       - DirectConnectGatewayAttachment
       #- GlobalNetwork
       - Link
+      - Peering
       - Site
-      - SiteToSiteVpnAttachment
+      - TransitGatewayConnectPeerAssociation
       - TransitGatewayPeering
+      - TransitGatewayRegistration
       - TransitGatewayRouteTableAttachment
-      - VpcAttachment
+  field_paths:
+  - CreateConnectAttachmentInput.ClientToken
+  - CreateConnectPeerInput.ClientToken
+  - CreateCoreNetworkInput.ClientToken
+  - CreateSiteToSiteVpnAttachmentInput.ClientToken
+  - CreateVpcAttachmentInput.ClientToken
+
+operations:
+  # CoreNetworkPolicy uses Put for both create and update
+  PutCoreNetworkPolicy:
+    operation_type:
+    - Create
+    resource_name: CoreNetworkPolicy
+  GetCoreNetworkPolicy:
+    operation_type:
+    - ReadOne
+    resource_name: CoreNetworkPolicy
+
 resources:
   GlobalNetwork:
     synced:
@@ -27,3 +44,294 @@ resources:
     hooks:
       sdk_update_pre_build_request:
         template_path: hooks/global_network/sdk_update_pre_build_request.go.tpl
+
+  CoreNetwork:
+    fields:
+      GlobalNetworkId:
+        is_immutable: true
+      Description: {}
+      PolicyDocument:
+        compare:
+          is_ignored: true
+    exceptions:
+      errors:
+        404:
+          code: ResourceNotFoundException
+      terminal_codes:
+        - ValidationException
+        - AccessDeniedException
+    synced:
+      when:
+      - path: Status.State
+        in:
+        - AVAILABLE
+    print:
+      add_age_column: true
+      add_synced_column: true
+      order_by: index
+      additional_columns:
+      - name: STATE
+        json_path: .status.state
+        type: string
+        index: 10
+      - name: CORENETWORKID
+        json_path: .status.coreNetworkID
+        type: string
+        index: 20
+      - name: GLOBALNETWORK
+        json_path: .spec.globalNetworkID
+        type: string
+        index: 30
+        priority: 1
+
+  CoreNetworkPolicy:
+    fields:
+      AutoExecute:
+        type: "*bool"
+      CoreNetworkId:
+        is_primary_key: true
+        is_immutable: true
+      PolicyDocument:
+        type: "string"
+    hooks:
+      sdk_create_post_set_output:
+        code: "if err = rm.handleChangeSetWorkflow(ctx, ko); err != nil { return &resource{ko}, err }"
+      sdk_read_one_post_set_output:
+        code: "if err = rm.checkChangeSetStateOnRead(ctx, ko); err != nil { return &resource{ko}, err }"
+    update_operation:
+      custom_method_name: customUpdateCoreNetworkPolicy
+    tags:
+      ignore: true
+    exceptions:
+      errors:
+        404:
+          code: ResourceNotFoundException
+      terminal_codes:
+        - ValidationException
+        - AccessDeniedException
+    print:
+      add_age_column: true
+      add_synced_column: true
+      order_by: index
+      additional_columns:
+      - name: CORENETWORKID
+        json_path: .spec.coreNetworkID
+        type: string
+        index: 10
+      - name: POLICYVERSION
+        json_path: .status.policyVersionID
+        type: string
+        index: 20
+      - name: CHANGESETSTATE
+        json_path: .status.changeSetState
+        type: string
+        index: 30
+
+  VpcAttachment:
+    fields:
+      CoreNetworkId:
+        is_immutable: true
+      VpcArn:
+        is_immutable: true
+      AttachmentId:
+        is_primary_key: true
+        is_read_only: true
+        from:
+          operation: GetVpcAttachment
+          path: VpcAttachment.Attachment.AttachmentId
+      State:
+        is_read_only: true
+        from:
+          operation: GetVpcAttachment
+          path: VpcAttachment.Attachment.State
+    hooks:
+      sdk_read_one_post_set_output:
+        code: "rm.syncTopLevelStatus(ko)"
+      sdk_create_post_set_output:
+        code: "rm.syncTopLevelStatus(ko)"
+      sdk_update_post_set_output:
+        code: "rm.syncTopLevelStatus(ko)"
+    delete_operation:
+      custom_method_name: customDeleteVpcAttachment
+    exceptions:
+      errors:
+        404:
+          code: ResourceNotFoundException
+      terminal_codes:
+        - ValidationException
+        - AccessDeniedException
+    synced:
+      when:
+      - path: Status.State
+        in:
+        - AVAILABLE
+    print:
+      add_age_column: true
+      add_synced_column: true
+      order_by: index
+      additional_columns:
+      - name: STATE
+        json_path: .status.state
+        type: string
+        index: 10
+      - name: ATTACHMENTID
+        json_path: .status.attachmentID
+        type: string
+        index: 20
+      - name: CORENETWORK
+        json_path: .spec.coreNetworkID
+        type: string
+        index: 30
+        priority: 1
+
+  ConnectAttachment:
+    fields:
+      CoreNetworkId:
+        is_immutable: true
+      EdgeLocation:
+        is_immutable: true
+      TransportAttachmentId:
+        is_immutable: true
+      Options:
+        is_immutable: true
+      AttachmentId:
+        is_primary_key: true
+        is_read_only: true
+        from:
+          operation: GetConnectAttachment
+          path: ConnectAttachment.Attachment.AttachmentId
+      State:
+        is_read_only: true
+        from:
+          operation: GetConnectAttachment
+          path: ConnectAttachment.Attachment.State
+    hooks:
+      sdk_read_one_post_set_output:
+        code: "rm.syncTopLevelStatus(ko)"
+      sdk_create_post_set_output:
+        code: "rm.syncTopLevelStatus(ko)"
+    delete_operation:
+      custom_method_name: customDeleteConnectAttachment
+    exceptions:
+      errors:
+        404:
+          code: ResourceNotFoundException
+      terminal_codes:
+        - ValidationException
+        - AccessDeniedException
+    synced:
+      when:
+      - path: Status.State
+        in:
+        - AVAILABLE
+    print:
+      add_age_column: true
+      add_synced_column: true
+      order_by: index
+      additional_columns:
+      - name: STATE
+        json_path: .status.state
+        type: string
+        index: 10
+      - name: ATTACHMENTID
+        json_path: .status.attachmentID
+        type: string
+        index: 20
+      - name: CORENETWORK
+        json_path: .spec.coreNetworkID
+        type: string
+        index: 30
+        priority: 1
+
+  ConnectPeer:
+    fields:
+      ConnectAttachmentId:
+        is_immutable: true
+      PeerAddress:
+        is_immutable: true
+      CoreNetworkAddress:
+        is_immutable: true
+      InsideCidrBlocks:
+        is_immutable: true
+      BgpOptions:
+        is_immutable: true
+    exceptions:
+      errors:
+        404:
+          code: ResourceNotFoundException
+      terminal_codes:
+        - ValidationException
+        - AccessDeniedException
+    synced:
+      when:
+      - path: Status.State
+        in:
+        - AVAILABLE
+    print:
+      add_age_column: true
+      add_synced_column: true
+      order_by: index
+      additional_columns:
+      - name: STATE
+        json_path: .status.state
+        type: string
+        index: 10
+      - name: CONNECTATTACHMENT
+        json_path: .spec.connectAttachmentID
+        type: string
+        index: 20
+
+  SiteToSiteVpnAttachment:
+    fields:
+      CoreNetworkId:
+        is_immutable: true
+      VpnConnectionArn:
+        is_immutable: true
+      AttachmentId:
+        is_primary_key: true
+        is_read_only: true
+        from:
+          operation: GetSiteToSiteVpnAttachment
+          path: SiteToSiteVpnAttachment.Attachment.AttachmentId
+      State:
+        is_read_only: true
+        from:
+          operation: GetSiteToSiteVpnAttachment
+          path: SiteToSiteVpnAttachment.Attachment.State
+    hooks:
+      sdk_read_one_post_set_output:
+        code: "rm.syncTopLevelStatus(ko)"
+      sdk_create_post_set_output:
+        code: "rm.syncTopLevelStatus(ko)"
+    delete_operation:
+      custom_method_name: customDeleteSiteToSiteVpnAttachment
+    exceptions:
+      errors:
+        404:
+          code: ResourceNotFoundException
+      terminal_codes:
+        - ValidationException
+        - AccessDeniedException
+    synced:
+      when:
+      - path: Status.State
+        in:
+        - AVAILABLE
+    print:
+      add_age_column: true
+      add_synced_column: true
+      order_by: index
+      additional_columns:
+      - name: STATE
+        json_path: .status.state
+        type: string
+        index: 10
+      - name: ATTACHMENTID
+        json_path: .status.attachmentID
+        type: string
+        index: 20
+      - name: CORENETWORK
+        json_path: .spec.coreNetworkID
+        type: string
+        index: 30
+        priority: 1
