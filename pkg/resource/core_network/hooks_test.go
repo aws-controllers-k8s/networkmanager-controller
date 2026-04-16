@@ -80,12 +80,12 @@ func TestSyncPolicyDocument(t *testing.T) {
 		assertResult func(*testing.T, *mockCoreNetworkPolicyClient)
 	}{
 		{
-			name: "same version same document returns nil",
+			name: "no changes needed",
 			client: &mockCoreNetworkPolicyClient{
-				getOutput: newGetPolicyOutput(t, 7, `{"a":1,"b":[2, 3]}`, ""),
+				getOutput: newGetPolicyOutput(t, 99, `{"a":1,"b":[2, 3]}`, ""),
 			},
 			desired: newCoreNetworkResource(t, "core-network-123", 0, `{"b":[2,3],"a":1}`),
-			live:    newCoreNetworkResource(t, "core-network-123", 7, `{"b":[2,3],"a":1}`),
+			live:    newCoreNetworkResource(t, "core-network-123", 99, `{"a":1,"b":[2, 3]}`),
 			assertResult: func(t *testing.T, client *mockCoreNetworkPolicyClient) {
 				assertPolicyCalls(t, client, 1, 0, 0)
 				if got := client.getInputs[0].Alias; got != svcsdktypes.CoreNetworkPolicyAliasLatest {
@@ -94,24 +94,24 @@ func TestSyncPolicyDocument(t *testing.T) {
 			},
 		},
 		{
-			name: "same version different document puts policy",
+			name: "new policy submission needed",
 			client: &mockCoreNetworkPolicyClient{
-				getOutput: newGetPolicyOutput(t, 3, `{"segments":[{"name":"blue"}]}`, ""),
+				getOutput: newGetPolicyOutput(t, 3, `{"segments":[{"name":"blue"}]}`, svcsdktypes.ChangeSetStateExecutionSucceeded),
 			},
 			desired: newCoreNetworkResource(t, "core-network-123", 0, `{"segments":[{"name":"green"}]}`),
-			live:    newCoreNetworkResource(t, "core-network-123", 3, ""),
+			live:    newCoreNetworkResource(t, "core-network-123", 3, `{"segments":[{"name":"blue"}]}`),
 			wantErr: requeueWaitWhilePolicyDocumentUpdating,
 			assertResult: func(t *testing.T, client *mockCoreNetworkPolicyClient) {
 				assertPolicyCalls(t, client, 1, 1, 0)
-				if got := *client.putInputs[0].PolicyDocument; got != `{"segments":[{"name":"green"}]}` {
-					t.Fatalf("expected updated policy document, got %q", got)
+				if got := client.putInputs[0].PolicyDocument; got != nil && *got != `{"segments":[{"name":"green"}]}` {
+					t.Fatalf("expected updated policy document, got %q", *got)
 				}
 			},
 		},
 		{
 			name: "no latest policy puts desired document",
 			client: &mockCoreNetworkPolicyClient{
-				getErr: stubAPIError{code: "ValidationException", message: "no policy", fault: smithy.FaultClient},
+				getErr: policyNotFoundErr,
 			},
 			desired: newCoreNetworkResource(t, "core-network-123", 0, `{"segments":[{"name":"initial"}]}`),
 			live:    newCoreNetworkResource(t, "core-network-123", 0, ""),
@@ -121,7 +121,18 @@ func TestSyncPolicyDocument(t *testing.T) {
 			},
 		},
 		{
-			name: "different version pending generation returns requeue",
+			name: "no latest policy and none desired",
+			client: &mockCoreNetworkPolicyClient{
+				getErr: policyNotFoundErr,
+			},
+			desired: newCoreNetworkResource(t, "core-network-123", 0, ""),
+			live:    newCoreNetworkResource(t, "core-network-123", 42, ""),
+			assertResult: func(t *testing.T, client *mockCoreNetworkPolicyClient) {
+				assertPolicyCalls(t, client, 1, 0, 0)
+			},
+		},
+		{
+			name: "matching documents pending generation",
 			client: &mockCoreNetworkPolicyClient{
 				getOutput: newGetPolicyOutput(t, 11, `{"segments":[]}`, svcsdktypes.ChangeSetStatePendingGeneration),
 			},
@@ -133,7 +144,7 @@ func TestSyncPolicyDocument(t *testing.T) {
 			},
 		},
 		{
-			name: "different version ready to execute runs change set",
+			name: "matching documents ready to execute",
 			client: &mockCoreNetworkPolicyClient{
 				getOutput: newGetPolicyOutput(t, 11, `{"segments":[]}`, svcsdktypes.ChangeSetStateReadyToExecute),
 			},
@@ -148,7 +159,7 @@ func TestSyncPolicyDocument(t *testing.T) {
 			},
 		},
 		{
-			name: "different version executing returns requeue",
+			name: "matching documents executing",
 			client: &mockCoreNetworkPolicyClient{
 				getOutput: newGetPolicyOutput(t, 11, `{"segments":[]}`, svcsdktypes.ChangeSetStateExecuting),
 			},
@@ -160,9 +171,9 @@ func TestSyncPolicyDocument(t *testing.T) {
 			},
 		},
 		{
-			name:    "get policy error returns error",
+			name:    "get policy error",
 			client:  &mockCoreNetworkPolicyClient{getErr: getErr},
-			desired: newCoreNetworkResource(t, "core-network-123", 0, ""), //`{"segments":[]}`),
+			desired: newCoreNetworkResource(t, "core-network-123", 0, ""),
 			live:    newCoreNetworkResource(t, "core-network-123", 0, ""),
 			wantErr: getErr,
 			assertResult: func(t *testing.T, client *mockCoreNetworkPolicyClient) {
@@ -170,17 +181,7 @@ func TestSyncPolicyDocument(t *testing.T) {
 			},
 		},
 		{
-			name:    "no live policy returns requeue",
-			client:  &mockCoreNetworkPolicyClient{getErr: policyNotFoundErr},
-			desired: newCoreNetworkResource(t, "core-network-123", 0, `{"segments":[]}`),
-			live:    newCoreNetworkResource(t, "core-network-123", 0, ""),
-			wantErr: requeueWaitWhilePolicyDocumentUpdating,
-			assertResult: func(t *testing.T, client *mockCoreNetworkPolicyClient) {
-				assertPolicyCalls(t, client, 1, 1, 0)
-			},
-		},
-		{
-			name: "put policy error returns error",
+			name: "put policy error",
 			client: &mockCoreNetworkPolicyClient{
 				getOutput: newGetPolicyOutput(t, 3, `{"segments":[{"name":"blue"}]}`, ""),
 				putErr:    putErr,
@@ -193,7 +194,7 @@ func TestSyncPolicyDocument(t *testing.T) {
 			},
 		},
 		{
-			name: "execute change set error returns error",
+			name: "execute change set error",
 			client: &mockCoreNetworkPolicyClient{
 				getOutput:  newGetPolicyOutput(t, 11, `{"segments":[]}`, svcsdktypes.ChangeSetStateReadyToExecute),
 				executeErr: executeErr,
@@ -203,6 +204,21 @@ func TestSyncPolicyDocument(t *testing.T) {
 			wantErr: executeErr,
 			assertResult: func(t *testing.T, client *mockCoreNetworkPolicyClient) {
 				assertPolicyCalls(t, client, 1, 0, 1)
+			},
+		},
+		{
+			name: "out of band latest policy",
+			client: &mockCoreNetworkPolicyClient{
+				getOutput: newGetPolicyOutput(t, 11, `{"segments":[{"name":"blue"}]}`, svcsdktypes.ChangeSetStateReadyToExecute),
+			},
+			desired: newCoreNetworkResource(t, "core-network-123", 0, `{"segments":[{"name":"red"}]}`),
+			live:    newCoreNetworkResource(t, "core-network-123", 10, `{"segments":[{"name":"green"}]}`),
+			wantErr: requeueWaitWhilePolicyDocumentUpdating,
+			assertResult: func(t *testing.T, client *mockCoreNetworkPolicyClient) {
+				assertPolicyCalls(t, client, 1, 1, 0)
+				if got := *client.putInputs[0].PolicyDocument; got != `{"segments":[{"name":"red"}]}` {
+					t.Fatalf("expected updated policy document, got %q", got)
+				}
 			},
 		},
 	}

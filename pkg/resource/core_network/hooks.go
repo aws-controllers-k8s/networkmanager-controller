@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"reflect"
 
 	"github.com/aws-controllers-k8s/networkmanager-controller/pkg/tags"
@@ -48,28 +47,18 @@ func syncPolicyDocument(
 	desired *resource,
 	live *resource,
 ) error {
-	fmt.Println("IN SYNC POLICY")
 	coreNetworkID := live.ko.Status.CoreNetworkID
 
-	// Check live and latest policy documents.
-	// If live and latest have the same policy version ID, check their policy documents.
-	// If they differ, it means the latest policy document has been updated
-	// since the last time we checked, and we should attempt to submit it for execution.
-	// If live and latest have different policy version IDs, it means a new policy document
-	// has been submitted and is either pending generation, ready to execute, or executing.
+	// Grab latest policy document.
+	// For the resource to be in sync, latest, live and desired policy documents all need to be the same.
 	latestPolicyResp, err := client.GetCoreNetworkPolicy(ctx, &svcsdk.GetCoreNetworkPolicyInput{
 		CoreNetworkId: coreNetworkID,
 		Alias:         svcsdktypes.CoreNetworkPolicyAliasLatest,
 	})
 	// If there are no policies at all, GetCoreNetworkPolicy will throw a ValidationException.
 	// We can ignore this error and treat it as if there is no latest policy.
-	if ignoreValidationException(err) != nil {
+	if err != nil && !isValidationException(err) {
 		return err
-	}
-
-	livePolicyVersionId := int32(0)
-	if live.ko.Status.PolicyVersionID != nil {
-		livePolicyVersionId = (int32)(*live.ko.Status.PolicyVersionID)
 	}
 
 	latestPolicyVersionId := int32(0)
@@ -81,25 +70,31 @@ func syncPolicyDocument(
 		latestPolicyChangeSetState = latestPolicyResp.CoreNetworkPolicy.ChangeSetState
 	}
 
-	var desiredPolicyDocument *string
-	if desired.ko.Spec.PolicyDocument != nil {
-		desiredPolicyDocument = desired.ko.Spec.PolicyDocument
+	livePolicyVersionID := int32(0)
+	if live.ko.Status.PolicyVersionID != nil {
+		livePolicyVersionID = int32(*live.ko.Status.PolicyVersionID)
 	}
-	if livePolicyVersionId == latestPolicyVersionId {
-		if !arePolicyDocumentsEqual(desiredPolicyDocument, latestPolicyDocument) {
-			fmt.Printf("ABOUT TO PUTCORENETWORKPOLICY: DESIRED - %#v\n", desiredPolicyDocument)
-			putInput := &svcsdk.PutCoreNetworkPolicyInput{
-				CoreNetworkId:  coreNetworkID,
-				PolicyDocument: desiredPolicyDocument,
-			}
-			_, err := client.PutCoreNetworkPolicy(ctx, putInput)
-			if err != nil {
-				return err
-			}
-			// Requeue immediately to start polling for READY_TO_EXECUTE status
-			return requeueWaitWhilePolicyDocumentUpdating
+
+	// If desired is different from latest, we need to submit the new policy document for execution.
+	if !arePolicyDocumentsEqual(desired.ko.Spec.PolicyDocument, latestPolicyDocument) {
+		putInput := &svcsdk.PutCoreNetworkPolicyInput{
+			CoreNetworkId:  coreNetworkID,
+			PolicyDocument: desired.ko.Spec.PolicyDocument,
 		}
-		// If we are here it means the live policy is the same as the desired policy, nothing to do
+		_, err := client.PutCoreNetworkPolicy(ctx, putInput)
+		if err != nil {
+			return err
+		}
+		// Requeue immediately to start polling for READY_TO_EXECUTE status
+		return requeueWaitWhilePolicyDocumentUpdating
+	}
+
+	// At this point, desired and latest policy documents are the same,
+	// so we can check latest and walk the state machine until
+	// it concides with live.
+
+	if latestPolicyVersionId == livePolicyVersionID {
+		// desired, latest and live are all the same, we are in sync.
 		return nil
 	}
 
@@ -146,12 +141,10 @@ func normalizePolicyDocument(policyDocument *string) string {
 	return *policyDocument
 }
 
-func ignoreValidationException(err error) error {
-	if err != nil {
-		var awsErr smithy.APIError
-		if !errors.As(err, &awsErr) || awsErr.ErrorCode() != "ValidationException" {
-			return err
-		}
+func isValidationException(err error) bool {
+	if err == nil {
+		return false
 	}
-	return nil
+	var awsErr smithy.APIError
+	return errors.As(err, &awsErr) && awsErr.ErrorCode() == "ValidationException"
 }

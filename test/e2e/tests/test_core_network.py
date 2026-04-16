@@ -141,6 +141,16 @@ class TestCoreNetwork:
         assert k8s.wait_on_condition(ref, "ACK.ResourceSynced", "True", wait_periods=10)
         networkmanager_validator.assert_core_network_segment(resource_id, "test")
 
+        updatedPolicyDocument = json.loads(CORE_NETWORK_POLICY_DEFAULT)
+        updatedPolicyDocument["segments"].append({"name": "updated"})
+        updates = {
+            "spec": {"policyDocument": json.dumps(updatedPolicyDocument)}
+        }
+        k8s.patch_custom_resource(ref, updates)
+        time.sleep(MODIFY_WAIT_AFTER_SECONDS)
+        assert k8s.wait_on_condition(ref, "ACK.ResourceSynced", "True", wait_periods=10)
+        networkmanager_validator.assert_core_network_segment(resource_id, "updated")
+
         # Delete k8s resource
         _, deleted = k8s.delete_custom_resource(ref, 10, 60)
         assert deleted is True

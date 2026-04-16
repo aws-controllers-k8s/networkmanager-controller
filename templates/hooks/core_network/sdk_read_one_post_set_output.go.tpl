@@ -4,7 +4,7 @@ policyResp, err := rm.sdkapi.GetCoreNetworkPolicy(ctx, &svcsdk.GetCoreNetworkPol
 })
 // If the core network has no policy in "live" state yet the request returns a ValidationException
 // error, we can ignore it.
-if ignoreValidationException(err) != nil {
+if err != nil && !isValidationException(err) {
 	return nil, err
 }
 
