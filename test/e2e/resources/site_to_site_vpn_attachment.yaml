@@ -1,0 +1,10 @@
+apiVersion: networkmanager.services.k8s.aws/v1alpha1
+kind: SiteToSiteVpnAttachment
+metadata:
+  name: $S2S_VPN_ATTACHMENT_NAME
+spec:
+  coreNetworkID: $CORE_NETWORK_ID
+  vpnConnectionARN: $VPN_CONNECTION_ARN
+  tags:
+    - key: $TAG_KEY
+      value: $TAG_VALUE

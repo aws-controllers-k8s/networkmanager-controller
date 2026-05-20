@@ -1,0 +1,8 @@
+apiVersion: networkmanager.services.k8s.aws/v1alpha1
+kind: CoreNetworkPolicy
+metadata:
+  name: $CORE_NETWORK_POLICY_NAME
+spec:
+  coreNetworkID: $CORE_NETWORK_ID
+  policyDocument: $POLICY_DOCUMENT
+  autoExecute: $AUTO_EXECUTE

@@ -1,0 +1,13 @@
+apiVersion: networkmanager.services.k8s.aws/v1alpha1
+kind: ConnectAttachment
+metadata:
+  name: $CONNECT_ATTACHMENT_NAME
+spec:
+  coreNetworkID: $CORE_NETWORK_ID
+  edgeLocation: $EDGE_LOCATION
+  transportAttachmentID: $TRANSPORT_ATTACHMENT_ID
+  options:
+    protocol: $PROTOCOL
+  tags:
+    - key: $TAG_KEY
+      value: $TAG_VALUE
