@@ -27,14 +27,14 @@ import (
 // Core Network.
 type GlobalNetworkSpec struct {
 
-	// A description of the global network.
-	//
-	// Constraints: Maximum length of 256 characters.
-	//
-	// Regex Pattern: `^[\s\S]*$`
-	Description *string `json:"description,omitempty"`
-	// The tags to apply to the resource during creation.
-	Tags []*Tag `json:"tags,omitempty"`
+// A description of the global network.
+// 
+// Constraints: Maximum length of 256 characters.
+//
+// Regex Pattern: `^[\s\S]*$`
+Description *string `json:"description,omitempty"`
+// The tags to apply to the resource during creation.
+Tags []*Tag `json:"tags,omitempty"`
 }
 
 // GlobalNetworkStatus defines the observed state of GlobalNetwork
@@ -54,8 +54,8 @@ type GlobalNetworkStatus struct {
 	// +kubebuilder:validation:Optional
 	CreatedAt *metav1.Time `json:"createdAt,omitempty"`
 	// The ID of the global network.
-	//
-	// Regex Pattern: `^[\s\S]*$`
+//
+// Regex Pattern: `^[\s\S]*$`
 	// +kubebuilder:validation:Optional
 	GlobalNetworkID *string `json:"globalNetworkID,omitempty"`
 	// The state of the global network.
@@ -69,8 +69,8 @@ type GlobalNetworkStatus struct {
 type GlobalNetwork struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              GlobalNetworkSpec   `json:"spec,omitempty"`
-	Status            GlobalNetworkStatus `json:"status,omitempty"`
+	Spec   GlobalNetworkSpec   `json:"spec,omitempty"`
+	Status GlobalNetworkStatus `json:"status,omitempty"`
 }
 
 // GlobalNetworkList contains a list of GlobalNetwork
@@ -78,7 +78,7 @@ type GlobalNetwork struct {
 type GlobalNetworkList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []GlobalNetwork `json:"items"`
+	Items []GlobalNetwork `json:"items"`
 }
 
 func init() {

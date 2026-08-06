@@ -1,0 +1,15 @@
+apiVersion: networkmanager.services.k8s.aws/v1alpha1
+kind: ConnectPeer
+metadata:
+  name: $CONNECT_PEER_NAME
+spec:
+  connectAttachmentID: $CONNECT_ATTACHMENT_ID
+  peerAddress: $PEER_ADDRESS
+  coreNetworkAddress: $CORE_NETWORK_ADDRESS
+  insideCIDRBlocks:
+    - $INSIDE_CIDR_BLOCK
+  bgpOptions:
+    peerASN: $PEER_ASN
+  tags:
+    - key: $TAG_KEY
+      value: $TAG_VALUE

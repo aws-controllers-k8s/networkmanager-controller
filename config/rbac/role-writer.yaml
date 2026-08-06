@@ -9,7 +9,13 @@ rules:
 - apiGroups:
   - networkmanager.services.k8s.aws
   resources:
+  - connectattachments
+  - connectpeers
+  - corenetworks
+  - corenetworkpolicies
   - globalnetworks
+  - sitetositevpnattachments
+  - vpcattachments
   verbs:
   - create
   - delete
@@ -21,7 +27,13 @@ rules:
 - apiGroups:
   - networkmanager.services.k8s.aws
   resources:
+  - connectattachments
+  - connectpeers
+  - corenetworks
+  - corenetworkpolicies
   - globalnetworks
+  - sitetositevpnattachments
+  - vpcattachments
   verbs:
   - get
   - patch
