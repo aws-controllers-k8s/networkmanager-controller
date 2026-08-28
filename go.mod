@@ -3,8 +3,7 @@ module github.com/aws-controllers-k8s/networkmanager-controller
 go 1.25.0
 
 require (
-	github.com/aws-controllers-k8s/runtime v0.62.0
-	github.com/aws/aws-sdk-go v1.55.8
+	github.com/aws-controllers-k8s/runtime v0.63.0
 	github.com/aws/aws-sdk-go-v2 v1.41.4
 	github.com/aws/aws-sdk-go-v2/service/networkmanager v1.41.7
 	github.com/aws/smithy-go v1.24.2
