@@ -73,6 +73,7 @@ rules:
   - networkmanager.services.k8s.aws
   resources:
   - globalnetworks
+  - vpcattachments
   verbs:
   - create
   - delete
@@ -85,6 +86,7 @@ rules:
   - networkmanager.services.k8s.aws
   resources:
   - globalnetworks/status
+  - vpcattachments/status
   verbs:
   - get
   - patch

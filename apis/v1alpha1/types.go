@@ -28,26 +28,70 @@ var (
 
 // Specifies a location in Amazon Web Services.
 type AWSLocation struct {
-	Zone *string `json:"zone,omitempty"`
+	SubnetARN *string `json:"subnetARN,omitempty"`
+	Zone      *string `json:"zone,omitempty"`
 }
 
 // Describes a core network attachment.
 type Attachment struct {
-	CreatedAt   *metav1.Time `json:"createdAt,omitempty"`
-	SegmentName *string      `json:"segmentName,omitempty"`
-	Tags        []*Tag       `json:"tags,omitempty"`
-	UpdatedAt   *metav1.Time `json:"updatedAt,omitempty"`
+	AttachmentID               *string            `json:"attachmentID,omitempty"`
+	AttachmentPolicyRuleNumber *int64             `json:"attachmentPolicyRuleNumber,omitempty"`
+	AttachmentType             *string            `json:"attachmentType,omitempty"`
+	CoreNetworkARN             *string            `json:"coreNetworkARN,omitempty"`
+	CoreNetworkID              *string            `json:"coreNetworkID,omitempty"`
+	CreatedAt                  *metav1.Time       `json:"createdAt,omitempty"`
+	EdgeLocation               *string            `json:"edgeLocation,omitempty"`
+	EdgeLocations              []*string          `json:"edgeLocations,omitempty"`
+	LastModificationErrors     []*AttachmentError `json:"lastModificationErrors,omitempty"`
+	NetworkFunctionGroupName   *string            `json:"networkFunctionGroupName,omitempty"`
+	OwnerAccountID             *string            `json:"ownerAccountID,omitempty"`
+	// Describes proposed changes to a network function group.
+	ProposedNetworkFunctionGroupChange *ProposedNetworkFunctionGroupChange `json:"proposedNetworkFunctionGroupChange,omitempty"`
+	// Describes a proposed segment change. In some cases, the segment change must
+	// first be evaluated and accepted.
+	ProposedSegmentChange *ProposedSegmentChange `json:"proposedSegmentChange,omitempty"`
+	ResourceARN           *string                `json:"resourceARN,omitempty"`
+	SegmentName           *string                `json:"segmentName,omitempty"`
+	State                 *string                `json:"state,omitempty"`
+	Tags                  []*Tag                 `json:"tags,omitempty"`
+	UpdatedAt             *metav1.Time           `json:"updatedAt,omitempty"`
+}
+
+// Describes the error associated with an attachment request.
+type AttachmentError struct {
+	Code        *string `json:"code,omitempty"`
+	Message     *string `json:"message,omitempty"`
+	RequestID   *string `json:"requestID,omitempty"`
+	ResourceARN *string `json:"resourceARN,omitempty"`
 }
 
 // Summary information about routing policy associations for an attachment.
 type AttachmentRoutingPolicyAssociationSummary struct {
+	AttachmentID       *string `json:"attachmentID,omitempty"`
 	RoutingPolicyLabel *string `json:"routingPolicyLabel,omitempty"`
+}
+
+// Describes bandwidth information.
+type Bandwidth struct {
+	DownloadSpeed *int64 `json:"downloadSpeed,omitempty"`
+	UploadSpeed   *int64 `json:"uploadSpeed,omitempty"`
+}
+
+// Describes a core network Connect attachment.
+type ConnectAttachment struct {
+	// Describes a core network attachment.
+	Attachment            *Attachment `json:"attachment,omitempty"`
+	TransportAttachmentID *string     `json:"transportAttachmentID,omitempty"`
 }
 
 // Describes a core network Connect peer.
 type ConnectPeer struct {
-	CreatedAt *metav1.Time `json:"createdAt,omitempty"`
-	Tags      []*Tag       `json:"tags,omitempty"`
+	ConnectAttachmentID *string      `json:"connectAttachmentID,omitempty"`
+	CoreNetworkID       *string      `json:"coreNetworkID,omitempty"`
+	CreatedAt           *metav1.Time `json:"createdAt,omitempty"`
+	EdgeLocation        *string      `json:"edgeLocation,omitempty"`
+	SubnetARN           *string      `json:"subnetARN,omitempty"`
+	Tags                []*Tag       `json:"tags,omitempty"`
 }
 
 // Describes a core network Connect peer association.
@@ -55,10 +99,21 @@ type ConnectPeerAssociation struct {
 	GlobalNetworkID *string `json:"globalNetworkID,omitempty"`
 }
 
+// Describes an error associated with a Connect peer request
+type ConnectPeerError struct {
+	Message     *string `json:"message,omitempty"`
+	RequestID   *string `json:"requestID,omitempty"`
+	ResourceARN *string `json:"resourceARN,omitempty"`
+}
+
 // Summary description of a Connect peer.
 type ConnectPeerSummary struct {
-	CreatedAt *metav1.Time `json:"createdAt,omitempty"`
-	Tags      []*Tag       `json:"tags,omitempty"`
+	ConnectAttachmentID *string      `json:"connectAttachmentID,omitempty"`
+	CoreNetworkID       *string      `json:"coreNetworkID,omitempty"`
+	CreatedAt           *metav1.Time `json:"createdAt,omitempty"`
+	EdgeLocation        *string      `json:"edgeLocation,omitempty"`
+	SubnetARN           *string      `json:"subnetARN,omitempty"`
+	Tags                []*Tag       `json:"tags,omitempty"`
 }
 
 // Describes a connection.
@@ -76,6 +131,8 @@ type ConnectionHealth struct {
 
 // Describes a core network.
 type CoreNetwork struct {
+	CoreNetworkARN  *string      `json:"coreNetworkARN,omitempty"`
+	CoreNetworkID   *string      `json:"coreNetworkID,omitempty"`
 	CreatedAt       *metav1.Time `json:"createdAt,omitempty"`
 	Description     *string      `json:"description,omitempty"`
 	GlobalNetworkID *string      `json:"globalNetworkID,omitempty"`
@@ -97,40 +154,67 @@ type CoreNetworkChangeEvent struct {
 
 // Describes a core network change event.
 type CoreNetworkChangeEventValues struct {
+	AttachmentID             *string `json:"attachmentID,omitempty"`
 	CIDR                     *string `json:"cidr,omitempty"`
+	EdgeLocation             *string `json:"edgeLocation,omitempty"`
 	NetworkFunctionGroupName *string `json:"networkFunctionGroupName,omitempty"`
+	PeerEdgeLocation         *string `json:"peerEdgeLocation,omitempty"`
 	SegmentName              *string `json:"segmentName,omitempty"`
 }
 
 // Describes a core network change.
 type CoreNetworkChangeValues struct {
-	AttachmentID             *string `json:"attachmentID,omitempty"`
-	CIDR                     *string `json:"cidr,omitempty"`
-	DestinationIdentifier    *string `json:"destinationIdentifier,omitempty"`
-	NetworkFunctionGroupName *string `json:"networkFunctionGroupName,omitempty"`
-	SegmentName              *string `json:"segmentName,omitempty"`
+	AttachmentID                    *string   `json:"attachmentID,omitempty"`
+	CIDR                            *string   `json:"cidr,omitempty"`
+	DestinationIdentifier           *string   `json:"destinationIdentifier,omitempty"`
+	DNSSupport                      *bool     `json:"dnsSupport,omitempty"`
+	EdgeLocations                   []*string `json:"edgeLocations,omitempty"`
+	NetworkFunctionGroupName        *string   `json:"networkFunctionGroupName,omitempty"`
+	PeerEdgeLocations               []*string `json:"peerEdgeLocations,omitempty"`
+	SecurityGroupReferencingSupport *bool     `json:"securityGroupReferencingSupport,omitempty"`
+	SegmentName                     *string   `json:"segmentName,omitempty"`
+	VPNECMPSupport                  *bool     `json:"vpnECMPSupport,omitempty"`
+}
+
+// Describes a core network edge.
+type CoreNetworkEdge struct {
+	EdgeLocation *string `json:"edgeLocation,omitempty"`
 }
 
 // Describes a network function group.
 type CoreNetworkNetworkFunctionGroup struct {
-	Name *string `json:"name,omitempty"`
+	EdgeLocations []*string `json:"edgeLocations,omitempty"`
+	Name          *string   `json:"name,omitempty"`
 }
 
 // Describes a core network
 type CoreNetworkNetworkFunctionGroupIdentifier struct {
+	CoreNetworkID            *string `json:"coreNetworkID,omitempty"`
+	EdgeLocation             *string `json:"edgeLocation,omitempty"`
 	NetworkFunctionGroupName *string `json:"networkFunctionGroupName,omitempty"`
 }
 
 // Describes a core network policy. You can have only one LIVE Core Policy.
 type CoreNetworkPolicy struct {
-	CreatedAt   *metav1.Time `json:"createdAt,omitempty"`
-	Description *string      `json:"description,omitempty"`
+	CoreNetworkID   *string      `json:"coreNetworkID,omitempty"`
+	CreatedAt       *metav1.Time `json:"createdAt,omitempty"`
+	Description     *string      `json:"description,omitempty"`
+	PolicyVersionID *int64       `json:"policyVersionID,omitempty"`
+}
+
+// Provides details about an error in a core network policy.
+type CoreNetworkPolicyError struct {
+	ErrorCode *string `json:"errorCode,omitempty"`
+	Message   *string `json:"message,omitempty"`
+	Path      *string `json:"path,omitempty"`
 }
 
 // Describes a core network policy version.
 type CoreNetworkPolicyVersion struct {
-	CreatedAt   *metav1.Time `json:"createdAt,omitempty"`
-	Description *string      `json:"description,omitempty"`
+	CoreNetworkID   *string      `json:"coreNetworkID,omitempty"`
+	CreatedAt       *metav1.Time `json:"createdAt,omitempty"`
+	Description     *string      `json:"description,omitempty"`
+	PolicyVersionID *int64       `json:"policyVersionID,omitempty"`
 }
 
 // Routing information for a core network, including route details and BGP attributes.
@@ -143,18 +227,24 @@ type CoreNetworkRoutingInformation struct {
 // Describes a core network segment, which are dedicated routes. Only attachments
 // within this segment can communicate with each other.
 type CoreNetworkSegment struct {
-	Name *string `json:"name,omitempty"`
+	EdgeLocations []*string `json:"edgeLocations,omitempty"`
+	Name          *string   `json:"name,omitempty"`
 }
 
 // Returns details about a core network edge.
 type CoreNetworkSegmentEdgeIdentifier struct {
-	SegmentName *string `json:"segmentName,omitempty"`
+	CoreNetworkID *string `json:"coreNetworkID,omitempty"`
+	EdgeLocation  *string `json:"edgeLocation,omitempty"`
+	SegmentName   *string `json:"segmentName,omitempty"`
 }
 
 // Returns summary information about a core network.
 type CoreNetworkSummary struct {
+	CoreNetworkARN  *string `json:"coreNetworkARN,omitempty"`
+	CoreNetworkID   *string `json:"coreNetworkID,omitempty"`
 	Description     *string `json:"description,omitempty"`
 	GlobalNetworkID *string `json:"globalNetworkID,omitempty"`
+	OwnerAccountID  *string `json:"ownerAccountID,omitempty"`
 	Tags            []*Tag  `json:"tags,omitempty"`
 }
 
@@ -173,6 +263,12 @@ type Device struct {
 	Tags            []*Tag       `json:"tags,omitempty"`
 	Type            *string      `json:"type_,omitempty"`
 	Vendor          *string      `json:"vendor,omitempty"`
+}
+
+// Describes a Direct Connect gateway attachment.
+type DirectConnectGatewayAttachment struct {
+	// Describes a core network attachment.
+	Attachment *Attachment `json:"attachment,omitempty"`
 }
 
 // Describes the edge that's used for the override.
@@ -221,23 +317,32 @@ type NetworkFunctionGroup struct {
 
 // Describes a network resource.
 type NetworkResource struct {
-	Definition          *string      `json:"definition,omitempty"`
-	DefinitionTimestamp *metav1.Time `json:"definitionTimestamp,omitempty"`
-	ResourceID          *string      `json:"resourceID,omitempty"`
-	ResourceType        *string      `json:"resourceType,omitempty"`
-	Tags                []*Tag       `json:"tags,omitempty"`
+	AccountID            *string      `json:"accountID,omitempty"`
+	AWSRegion            *string      `json:"awsRegion,omitempty"`
+	CoreNetworkID        *string      `json:"coreNetworkID,omitempty"`
+	Definition           *string      `json:"definition,omitempty"`
+	DefinitionTimestamp  *metav1.Time `json:"definitionTimestamp,omitempty"`
+	RegisteredGatewayARN *string      `json:"registeredGatewayARN,omitempty"`
+	ResourceARN          *string      `json:"resourceARN,omitempty"`
+	ResourceID           *string      `json:"resourceID,omitempty"`
+	ResourceType         *string      `json:"resourceType,omitempty"`
+	Tags                 []*Tag       `json:"tags,omitempty"`
 }
 
 // Describes a resource count.
 type NetworkResourceCount struct {
+	Count        *int64  `json:"count,omitempty"`
 	ResourceType *string `json:"resourceType,omitempty"`
 }
 
 // Describes a network resource.
 type NetworkResourceSummary struct {
-	Definition   *string `json:"definition,omitempty"`
-	NameTag      *string `json:"nameTag,omitempty"`
-	ResourceType *string `json:"resourceType,omitempty"`
+	Definition           *string `json:"definition,omitempty"`
+	IsMiddlebox          *bool   `json:"isMiddlebox,omitempty"`
+	NameTag              *string `json:"nameTag,omitempty"`
+	RegisteredGatewayARN *string `json:"registeredGatewayARN,omitempty"`
+	ResourceARN          *string `json:"resourceARN,omitempty"`
+	ResourceType         *string `json:"resourceType,omitempty"`
 }
 
 // Describes a network route.
@@ -248,6 +353,8 @@ type NetworkRoute struct {
 
 // Describes the destination of a network route.
 type NetworkRouteDestination struct {
+	CoreNetworkAttachmentID  *string `json:"coreNetworkAttachmentID,omitempty"`
+	EdgeLocation             *string `json:"edgeLocation,omitempty"`
 	NetworkFunctionGroupName *string `json:"networkFunctionGroupName,omitempty"`
 	ResourceID               *string `json:"resourceID,omitempty"`
 	ResourceType             *string `json:"resourceType,omitempty"`
@@ -256,38 +363,64 @@ type NetworkRouteDestination struct {
 
 // Describes the telemetry information for a resource.
 type NetworkTelemetry struct {
-	Address      *string `json:"address,omitempty"`
-	ResourceID   *string `json:"resourceID,omitempty"`
-	ResourceType *string `json:"resourceType,omitempty"`
+	AccountID            *string `json:"accountID,omitempty"`
+	Address              *string `json:"address,omitempty"`
+	AWSRegion            *string `json:"awsRegion,omitempty"`
+	CoreNetworkID        *string `json:"coreNetworkID,omitempty"`
+	RegisteredGatewayARN *string `json:"registeredGatewayARN,omitempty"`
+	ResourceARN          *string `json:"resourceARN,omitempty"`
+	ResourceID           *string `json:"resourceID,omitempty"`
+	ResourceType         *string `json:"resourceType,omitempty"`
 }
 
 // Describes a path component.
 type PathComponent struct {
 	DestinationCIDRBlock *string `json:"destinationCIDRBlock,omitempty"`
+	Sequence             *int64  `json:"sequence,omitempty"`
 }
 
 // Describes a peering connection.
 type Peering struct {
-	CreatedAt *metav1.Time `json:"createdAt,omitempty"`
-	Tags      []*Tag       `json:"tags,omitempty"`
+	CoreNetworkARN *string      `json:"coreNetworkARN,omitempty"`
+	CoreNetworkID  *string      `json:"coreNetworkID,omitempty"`
+	CreatedAt      *metav1.Time `json:"createdAt,omitempty"`
+	EdgeLocation   *string      `json:"edgeLocation,omitempty"`
+	OwnerAccountID *string      `json:"ownerAccountID,omitempty"`
+	ResourceARN    *string      `json:"resourceARN,omitempty"`
+	Tags           []*Tag       `json:"tags,omitempty"`
+}
+
+// Describes an error associated with a peering request.
+type PeeringError struct {
+	Message     *string `json:"message,omitempty"`
+	RequestID   *string `json:"requestID,omitempty"`
+	ResourceARN *string `json:"resourceARN,omitempty"`
+}
+
+// Describes additional information about missing permissions.
+type PermissionsErrorContext struct {
+	MissingPermission *string `json:"missingPermission,omitempty"`
 }
 
 // Information about a prefix list association with a core network.
 type PrefixListAssociation struct {
+	CoreNetworkID   *string `json:"coreNetworkID,omitempty"`
 	PrefixListAlias *string `json:"prefixListAlias,omitempty"`
 }
 
 // Describes proposed changes to a network function group.
 type ProposedNetworkFunctionGroupChange struct {
-	NetworkFunctionGroupName *string `json:"networkFunctionGroupName,omitempty"`
-	Tags                     []*Tag  `json:"tags,omitempty"`
+	AttachmentPolicyRuleNumber *int64  `json:"attachmentPolicyRuleNumber,omitempty"`
+	NetworkFunctionGroupName   *string `json:"networkFunctionGroupName,omitempty"`
+	Tags                       []*Tag  `json:"tags,omitempty"`
 }
 
 // Describes a proposed segment change. In some cases, the segment change must
 // first be evaluated and accepted.
 type ProposedSegmentChange struct {
-	SegmentName *string `json:"segmentName,omitempty"`
-	Tags        []*Tag  `json:"tags,omitempty"`
+	AttachmentPolicyRuleNumber *int64  `json:"attachmentPolicyRuleNumber,omitempty"`
+	SegmentName                *string `json:"segmentName,omitempty"`
+	Tags                       []*Tag  `json:"tags,omitempty"`
 }
 
 // Describes a resource relationship.
@@ -298,14 +431,18 @@ type Relationship struct {
 
 // Describes a route analysis.
 type RouteAnalysis struct {
-	GlobalNetworkID *string      `json:"globalNetworkID,omitempty"`
-	RouteAnalysisID *string      `json:"routeAnalysisID,omitempty"`
-	StartTimestamp  *metav1.Time `json:"startTimestamp,omitempty"`
+	GlobalNetworkID   *string      `json:"globalNetworkID,omitempty"`
+	IncludeReturnPath *bool        `json:"includeReturnPath,omitempty"`
+	OwnerAccountID    *string      `json:"ownerAccountID,omitempty"`
+	RouteAnalysisID   *string      `json:"routeAnalysisID,omitempty"`
+	StartTimestamp    *metav1.Time `json:"startTimestamp,omitempty"`
+	UseMiddleboxes    *bool        `json:"useMiddleboxes,omitempty"`
 }
 
 // Information about the next hop for a route in the core network.
 type RoutingInformationNextHop struct {
 	CoreNetworkAttachmentID *string `json:"coreNetworkAttachmentID,omitempty"`
+	EdgeLocation            *string `json:"edgeLocation,omitempty"`
 	ResourceID              *string `json:"resourceID,omitempty"`
 	ResourceType            *string `json:"resourceType,omitempty"`
 	SegmentName             *string `json:"segmentName,omitempty"`
@@ -317,6 +454,12 @@ type Site struct {
 	Description     *string      `json:"description,omitempty"`
 	GlobalNetworkID *string      `json:"globalNetworkID,omitempty"`
 	Tags            []*Tag       `json:"tags,omitempty"`
+}
+
+// Creates a site-to-site VPN attachment.
+type SiteToSiteVPNAttachment struct {
+	// Describes a core network attachment.
+	Attachment *Attachment `json:"attachment,omitempty"`
 }
 
 // Describes a tag.
@@ -338,4 +481,33 @@ type TransitGatewayRegistration struct {
 // Describes the status of a transit gateway registration.
 type TransitGatewayRegistrationStateReason struct {
 	Message *string `json:"message,omitempty"`
+}
+
+// Describes a transit gateway route table attachment.
+type TransitGatewayRouteTableAttachment struct {
+	// Describes a core network attachment.
+	Attachment *Attachment `json:"attachment,omitempty"`
+}
+
+// Describes a VPC attachment.
+type VPCAttachment_SDK struct {
+	// Describes a core network attachment.
+	Attachment *Attachment `json:"attachment,omitempty"`
+	// Describes the VPC options.
+	Options    *VPCOptions `json:"options,omitempty"`
+	SubnetARNs []*string   `json:"subnetARNs,omitempty"`
+}
+
+// Describes the VPC options.
+type VPCOptions struct {
+	ApplianceModeSupport            *bool `json:"applianceModeSupport,omitempty"`
+	DNSSupport                      *bool `json:"dnsSupport,omitempty"`
+	IPv6Support                     *bool `json:"ipv6Support,omitempty"`
+	SecurityGroupReferencingSupport *bool `json:"securityGroupReferencingSupport,omitempty"`
+}
+
+// Describes a validation exception for a field.
+type ValidationExceptionField struct {
+	Message *string `json:"message,omitempty"`
+	Name    *string `json:"name,omitempty"`
 }

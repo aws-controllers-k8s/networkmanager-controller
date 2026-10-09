@@ -39,3 +39,13 @@ class NetworkManagerValidator:
         except self.networkmanager_client.exceptions.ClientError:
             pass
         assert res_found is exists
+
+    def get_vpc_attachment(self, attachment_id: str) -> Union[None, Dict]:
+        try:
+            aws_res = self.networkmanager_client.get_vpc_attachment(AttachmentId=attachment_id)
+            return aws_res.get("VpcAttachment")
+        except self.networkmanager_client.exceptions.ClientError:
+            return None
+
+    def assert_vpc_attachment(self, attachment_id: str, exists=True):
+        assert (self.get_vpc_attachment(attachment_id) is not None) is exists

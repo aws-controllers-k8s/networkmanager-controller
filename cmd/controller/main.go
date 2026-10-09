@@ -42,6 +42,7 @@ import (
 	svcresource "github.com/aws-controllers-k8s/networkmanager-controller/pkg/resource"
 
 	_ "github.com/aws-controllers-k8s/networkmanager-controller/pkg/resource/global_network"
+	_ "github.com/aws-controllers-k8s/networkmanager-controller/pkg/resource/vpc_attachment"
 
 	"github.com/aws-controllers-k8s/networkmanager-controller/pkg/version"
 )

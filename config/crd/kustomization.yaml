@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - common
   - bases/networkmanager.services.k8s.aws_globalnetworks.yaml
+  - bases/networkmanager.services.k8s.aws_vpcattachments.yaml

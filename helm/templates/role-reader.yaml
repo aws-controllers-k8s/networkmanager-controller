@@ -17,6 +17,7 @@ rules:
   - networkmanager.services.k8s.aws
   resources:
   - globalnetworks
+  - vpcattachments
   verbs:
   - get
   - list

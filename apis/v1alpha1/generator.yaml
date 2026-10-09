@@ -13,7 +13,13 @@ ignore:
       - SiteToSiteVpnAttachment
       - TransitGatewayPeering
       - TransitGatewayRouteTableAttachment
-      - VpcAttachment
+      #- VpcAttachment
+  field_paths:
+    # RoutingPolicyLabel has no create-time write path in this model; it is
+    # only reachable through the separate PutAttachmentRoutingPolicyLabel and
+    # RemoveAttachmentRoutingPolicyLabel operations. Omit it from the CRD
+    # entirely in Phase 1 rather than generating a field with no effect.
+    - CreateVpcAttachmentInput.RoutingPolicyLabel
 resources:
   GlobalNetwork:
     synced:
@@ -27,3 +33,108 @@ resources:
     hooks:
       sdk_update_pre_build_request:
         template_path: hooks/global_network/sdk_update_pre_build_request.go.tpl
+
+  VpcAttachment:
+    # ClientToken carries the smithy.api#idempotencyToken trait; the SDK
+    # middleware auto-fills it with a UUID when nil, so it is an
+    # implementation detail, not a field the CRD should expose.
+    ignore_idempotency_token: true
+    fields:
+      CoreNetworkId:
+        is_immutable: true
+      VpcArn:
+        is_immutable: true
+      # AttachmentId and State live in the nested VpcAttachment.Attachment
+      # struct in every API response. The `from` directive promotes them to
+      # top-level Status fields; without this, requiredFieldsMissingFromReadOneInput
+      # always returns true after Create and the controller retries
+      # CreateVpcAttachment instead of reconciling with GetVpcAttachment.
+      #
+      # Field config keys must match the SDK shape member name exactly
+      # (AttachmentId, not AttachmentID); the generator derives the
+      # camel-cased Go field name (AttachmentID) itself.
+      AttachmentId:
+        is_primary_key: true
+        is_read_only: true
+        from:
+          operation: GetVpcAttachment
+          path: VpcAttachment.Attachment.AttachmentId
+      State:
+        is_read_only: true
+        from:
+          operation: GetVpcAttachment
+          path: VpcAttachment.Attachment.State
+      # Exposes "ARN metadata when available" per the design's resource
+      # contract. Not configured as is_arn/ACKResourceMetadata.ARN: that
+      # heuristic only matches top-level fields literally named "arn" or
+      # "<resource>arn", and does not reach into the nested Attachment
+      # struct, so relying on it here is unverified. The tag-sync hook reads
+      # this field directly instead.
+      ResourceArn:
+        is_read_only: true
+        from:
+          operation: GetVpcAttachment
+          path: VpcAttachment.Attachment.ResourceArn
+    hooks:
+      # UpdateVpcAttachmentInput has no Tags field; a tag-only change must
+      # sync through TagResource/UntagResource and short-circuit before
+      # UpdateVpcAttachment is called, mirroring the GlobalNetwork tag-sync
+      # pattern.
+      sdk_update_pre_build_request:
+        template_path: hooks/vpc_attachment/sdk_update_pre_build_request.go.tpl
+      # UpdateVpcAttachmentInput models subnet membership as
+      # AddSubnetArns/RemoveSubnetArns, not a field literally named
+      # SubnetArns, so the generator cannot auto-populate it from
+      # Spec.SubnetARNs. Runs after `input` exists so the hook can set the
+      # two fields directly on it.
+      sdk_update_post_build_request:
+        template_path: hooks/vpc_attachment/sdk_update_post_build_request.go.tpl
+      # AttachmentID and State are nested two levels deep
+      # (VpcAttachment.Attachment.*) in every Create/Read/Update response.
+      # The `from:` config above resolves the Go type for the Status field,
+      # but does not by itself emit value-copy code across every operation's
+      # output. Promote explicitly after each call so the controller always
+      # has an AttachmentID to key subsequent GetVpcAttachment/Update/Delete
+      # calls on; otherwise requiredFieldsMissingFromReadOneInput stays true
+      # forever and the controller retries CreateVpcAttachment indefinitely.
+      sdk_create_post_set_output:
+        code: rm.syncTopLevelStatus(ko)
+      sdk_read_one_post_set_output:
+        code: rm.syncTopLevelStatus(ko)
+      sdk_update_post_set_output:
+        code: rm.syncTopLevelStatus(ko)
+    delete_operation:
+      # VpcAttachment has no DeleteVpcAttachment operation; deletion goes
+      # through the generic DeleteAttachment API shared by all attachment
+      # types.
+      custom_method_name: customDeleteVpcAttachment
+    exceptions:
+      errors:
+        404:
+          code: ResourceNotFoundException
+      terminal_codes:
+        - ValidationException
+        - AccessDeniedException
+    synced:
+      when:
+      - path: Status.State
+        in:
+        - AVAILABLE
+    print:
+      add_age_column: true
+      add_synced_column: true
+      order_by: index
+      additional_columns:
+      - name: STATE
+        json_path: .status.state
+        type: string
+        index: 10
+      - name: ATTACHMENTID
+        json_path: .status.attachmentID
+        type: string
+        index: 20
+      - name: CORENETWORKID
+        json_path: .spec.coreNetworkID
+        type: string
+        index: 30
+        priority: 1

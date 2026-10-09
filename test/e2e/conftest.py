@@ -4,7 +4,7 @@
 # not use this file except in compliance with the License. A copy of the
 # License is located at
 #
-#	 http://aws.amazon.com/apache2.0/
+# 	 http://aws.amazon.com/apache2.0/
 #
 # or in the "license" file accompanying this file. This file is distributed
 # on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
@@ -13,26 +13,27 @@
 
 import boto3
 import pytest
-
 from acktest.k8s import resource as k8s
+
+from e2e.bootstrap_resources import NETWORKMANAGER_CONTROL_PLANE_REGION
 
 
 def pytest_addoption(parser):
-    parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
+    parser.addoption(
+        "--runslow", action="store_true", default=False, help="run slow tests"
+    )
+
 
 def pytest_configure(config):
-    config.addinivalue_line(
-        "markers", "canary: mark test to also run in canary tests"
-    )
+    config.addinivalue_line("markers", "canary: mark test to also run in canary tests")
     config.addinivalue_line(
         "markers", "service(arg): mark test associated with a given service"
     )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow to run"
-    )
+    config.addinivalue_line("markers", "slow: mark test as slow to run")
     config.addinivalue_line(
         "markers", "resource_data: mark test with data to use when creating fixture"
     )
+
 
 def pytest_collection_modifyitems(config, items):
     if config.getoption("--runslow"):
@@ -42,11 +43,16 @@ def pytest_collection_modifyitems(config, items):
         if "slow" in item.keywords:
             item.add_marker(skip_slow)
 
+
 # Provide a k8s client to interact with the integration test cluster
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def k8s_client():
     return k8s._get_k8s_api_client()
 
-@pytest.fixture(scope='module')
+
+@pytest.fixture(scope="module")
 def networkmanager_client():
-    return boto3.client('networkmanager')
+    return boto3.client(
+        "networkmanager",
+        region_name=NETWORKMANAGER_CONTROL_PLANE_REGION,
+    )
